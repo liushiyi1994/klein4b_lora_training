@@ -1,0 +1,62 @@
+job: extension
+config:
+  name: demo_ffhq_makeup_makeup03
+  process:
+    - type: diffusion_trainer
+      training_folder: "{{ training_folder }}"
+      device: "cuda"
+      trigger_word: "K4BMAKEUP03"
+      network:
+        type: "lora"
+        linear: 64
+        linear_alpha: 32
+        conv: 32
+        conv_alpha: 16
+      save:
+        dtype: "bf16"
+        save_every: 300
+        max_step_saves_to_keep: 2
+      datasets:
+        - folder_path: "{{ dataset_dir }}"
+          caption_ext: "txt"
+          cache_latents_to_disk: true
+          resolution:
+            - 512
+      train:
+        batch_size: 1
+        steps: 1800
+        gradient_accumulation_steps: 1
+        train_unet: true
+        train_text_encoder: false
+        gradient_checkpointing: true
+        lr: 0.00009
+        noise_scheduler: "flowmatch"
+        optimizer: "adamw8bit"
+        timestep_type: "weighted"
+        content_or_style: "balanced"
+        dtype: "bf16"
+        unload_text_encoder: false
+      model:
+        arch: "flux2_klein_4b"
+        name_or_path: "black-forest-labs/FLUX.2-klein-base-4B"
+        quantize: true
+        quantize_te: true
+        qtype: "qfloat8"
+        qtype_te: "qfloat8"
+        low_vram: true
+        model_kwargs:
+          match_target_res: false
+      sample:
+        sampler: "flowmatch"
+        sample_every: 300
+        width: 512
+        height: 512
+        prompts:
+          - "[trigger], centered studio portrait, clean background, detailed face"
+        neg: ""
+        seed: 7
+        guidance_scale: 4
+        sample_steps: 20
+meta:
+  name: "demo_ffhq_makeup_makeup03"
+  version: "1.0"

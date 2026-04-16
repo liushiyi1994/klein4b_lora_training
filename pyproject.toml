@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "klein4b"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+description = "Bootstrap training pipeline for FLUX.2 Klein 4B LoRA experiments."
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = [".venv", "vendor"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
