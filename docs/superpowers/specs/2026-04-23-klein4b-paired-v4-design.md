@@ -33,6 +33,24 @@ That failure mode is consistent with the model preserving too much of the source
 
 **Can Klein4B learn “keep identity structure, but replace the source photo rendering with matte, weathered marble bust rendering”?**
 
+## Acceptance Criteria
+The paired Klein4B experiment should be judged against these three criteria:
+
+1. **Target bust style reads correctly**
+   - The output should read immediately as a weathered Greek marble bust.
+   - It should preserve the intended material direction: matte stone, carved hair/headwear, blank sculpted eyes or carved eyelids, broken base, and localized lava only in the base cracks.
+   - It does **not** need to match the paired target image one-to-one in every detail. The target is style supervision, not an exact reconstruction requirement.
+
+2. **Identity is preserved well enough to remain recognizable**
+   - The transformed bust should still read as the same person from the source image.
+   - This means preserving the major structural cues: face shape, proportions, nose/lip/jaw structure, age band, gender presentation where visually clear, head angle, and hair/headwear silhouette.
+   - It does **not** require exact photographic likeness or perfect one-to-one similarity.
+
+3. **Studio-photo lighting is removed**
+   - The result should not look like a selfie or portrait photo rendered in stone.
+   - It should avoid frontal beauty lighting, even face illumination, shiny forehead/nose/lips, smooth skin-like planes, and clean studio highlight placement.
+   - The face should read as stone under subdued, non-beauty lighting rather than a polished portrait.
+
 ## Existing Evidence
 The local AI Toolkit checkout already supports control-image paths for `flux2_klein_4b`. The UI config metadata exposes:
 
@@ -269,7 +287,7 @@ Another agent should be able to:
 - inspect the rewritten pair captions,
 - launch paired Klein4B training from a checked-in config,
 - run paired eval outputs side by side with current target-only FLUX outputs,
-- make a grounded call on whether paired training is better for the marble transformation task.
+- make a grounded call on whether paired training is better for the marble transformation task according to the three acceptance criteria above.
 
 ## Sources
 - Local paired-dataset assets under `data/marble-bust-data/v3/pairs/`
