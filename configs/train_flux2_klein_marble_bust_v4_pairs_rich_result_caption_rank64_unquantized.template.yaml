@@ -1,0 +1,70 @@
+job: extension
+config:
+  name: marble_bust_v4_pairs_rich_result_caption_rank64_unquantized_style
+  process:
+    - type: diffusion_trainer
+      training_folder: "{{ training_folder }}"
+      device: "cuda"
+      trigger_word: "<mrblbust>"
+      network:
+        type: "lora"
+        linear: 64
+        linear_alpha: 64
+        conv: 32
+        conv_alpha: 32
+      save:
+        dtype: "bf16"
+        save_every: 500
+        max_step_saves_to_keep: 16
+      datasets:
+        - folder_path: "data/marble-bust-data/v4_pairs_weathered_face_rich_result_caption/targets"
+          control_path_1: "data/marble-bust-data/v4_pairs_weathered_face_rich_result_caption/control"
+          caption_ext: "txt"
+          cache_latents_to_disk: true
+          resolution:
+            - 768
+      train:
+        batch_size: 1
+        steps: 10000
+        gradient_accumulation_steps: 1
+        train_unet: true
+        train_text_encoder: false
+        gradient_checkpointing: true
+        lr: 0.00006
+        noise_scheduler: "flowmatch"
+        optimizer: "adamw8bit"
+        timestep_type: "weighted"
+        content_or_style: "balanced"
+        dtype: "bf16"
+        unload_text_encoder: false
+      model:
+        arch: "flux2_klein_4b"
+        name_or_path: "black-forest-labs/FLUX.2-klein-base-4B"
+        quantize: false
+        quantize_te: false
+        low_vram: true
+        model_kwargs:
+          match_target_res: false
+      sample:
+        sampler: "flowmatch"
+        sample_every: 500
+        width: 768
+        height: 1024
+        samples:
+          - prompt: "Change image 1 into a <mrblbust> centered chest-up Greek marble statue bust of an adult woman; the resulting image should show a slight three-quarter head turn, rounded oval face, long rope-like carved hair falling behind the shoulder, classical draped garment over visible shoulders and upper torso, blank sculpted eyes, dark ash-grey matte weathered marble, dirty brown-grey mineral patina, rough pitted low-albedo face, fine cracks, jagged broken lower bust with small localized lava only in bottom cracks, dark ember background, no glossy polished marble, no wet shine, no specular hotspots, no frontal studio light, no head-on beauty lighting, no orange spill on face hair torso or background"
+            ctrl_img_1: "data/marble-bust-data/v4_pairs_weathered_face_rich_result_caption/control/1.jpg"
+          - prompt: "Change image 1 into a <mrblbust> centered chest-up Greek marble statue bust of an adult woman; the resulting image should show the wrapped headwear silhouette rising above the forehead, slender oval face, tapered jaw, forward-facing calm expression, carved garment and shoulder forms, blank sculpted eyes, dark ash-grey matte weathered marble, dry chalky unpolished stone, brown-grey grime in carved details, subtle cracks across face neck and torso, jagged broken lower bust with localized lava in the bottom edge only, dark ember background, no glossy polished marble, no wet shine, no specular hotspots, no frontal studio light, no head-on beauty lighting, no orange spill on face hair torso or background"
+            ctrl_img_1: "data/marble-bust-data/v4_pairs_weathered_face_rich_result_caption/control/7.jpg"
+          - prompt: "Change image 1 into a <mrblbust> centered chest-up Greek marble statue bust of a child; the resulting image should keep childlike facial proportions, rounded face, compact jaw, small mouth line, side-parted carved hair cap, simple classical garment, visible shoulders and upper torso, blank sculpted eyes, dark ash-grey matte weathered marble, dry chalky unpolished stone, dirty brown-grey patina, fine surface cracks, jagged broken lower bust with tiny lava fissures only in bottom cracks, dark ember background, no glossy polished marble, no wet shine, no specular hotspots, no frontal studio light, no head-on beauty lighting, no orange spill on face hair torso or background"
+            ctrl_img_1: "data/marble-bust-data/v4_pairs_weathered_face_rich_result_caption/control/eastasian_child_neutral_1.jpg"
+          - prompt: "Change image 1 into a <mrblbust> centered chest-up Greek marble statue bust of an adult person; the resulting image should preserve the long narrow face, straight nose, soft jaw, long center-parted wavy carved hair falling around the shoulders, classical draped garment, blank sculpted eyes, dark dirty grey-brown matte weathered marble, smoky mineral staining across face hair and garment, rough porous low-albedo face, dry unsealed stone with grime in carved grooves, jagged broken lower bust with localized lava only in the bottom edge, dark ember background, no glossy polished marble, no wet shine, no specular hotspots, no frontal studio light, no head-on beauty lighting, no orange spill on face hair torso or background"
+            ctrl_img_1: "data/marble-bust-data/v4_pairs_weathered_face_rich_result_caption/control/european_middleaged_neutral_3.jpg"
+          - prompt: "Change image 1 into a <mrblbust> centered chest-up Greek marble statue bust of an adult man; the resulting image should preserve the oval face, broad nose, compact jaw, receding short carved hair silhouette, ornate cuirass and draped shoulder forms, blank sculpted eyes, dark ash-grey matte weathered marble, dirty brown-grey mineral patina across face armor and torso, rough pitted low-albedo face surface, dry chalky unpolished stone, fine cracks, jagged broken lower bust with localized lava only in bottom cracks, dark ember background, no glossy polished marble, no wet shine, no specular hotspots, no frontal studio light, no head-on beauty lighting, no orange spill on face hair torso or background"
+            ctrl_img_1: "data/marble-bust-data/v4_pairs_weathered_face_rich_result_caption/control/southasian_middleaged_male_3.jpg"
+        neg: "head-only crop, close-up face, cropped shoulders, cropped torso, loose rocks, separate rock pile, rock pedestal, debris below bust, flat plinth, individual hair strands, natural hair color, glossy hair, polished marble, wet shine, specular hotspots, frontal studio light, head-on key light, beauty lighting, perfect portrait lighting, head-on beauty lighting, spotlight on face, smooth porcelain face, overexposed white face, clean bright cheeks, shiny forehead, shiny nose, shiny lips, red or orange light on face, red or orange light on hair, glowing skin, glowing hair, soft hair strands, realistic hair texture, modern eyewear, modern accessories, duplicate figures, side-by-side views, collage"
+        seed: 7
+        guidance_scale: 2.5
+        sample_steps: 24
+meta:
+  name: "marble_bust_v4_pairs_rich_result_caption_rank64_unquantized_style"
+  version: "4.1-unquantized"
