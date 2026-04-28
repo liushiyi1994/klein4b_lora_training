@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import yaml
+from PIL import Image, ImageDraw, ImageFont
 
 DEFAULT_MODEL_NAME = "black-forest-labs/FLUX.2-klein-base-4B"
 DEFAULT_BEST_LORA_PATH = (
@@ -91,3 +92,52 @@ def render_sample_style_config(
 
 def build_ai_toolkit_command(ai_toolkit_dir: Path, config_path: Path) -> list[str]:
     return [str(ai_toolkit_dir / "run.py"), str(config_path)]
+
+
+def find_latest_sample(samples_dir: Path) -> Path:
+    candidates = sorted(samples_dir.glob("*"))
+    image_candidates = [
+        path for path in candidates if path.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}
+    ]
+    if not image_candidates:
+        raise FileNotFoundError(f"No sample images found in {samples_dir}")
+    return image_candidates[-1]
+
+
+def make_comparison_contact_sheet(
+    output_path: Path,
+    reference_path: Path,
+    pseudo_target_path: Path | None,
+    previous_best_path: Path | None,
+    generated_path: Path | None,
+) -> None:
+    items = [("reference", reference_path)]
+    if pseudo_target_path is not None:
+        items.append(("pseudo target", pseudo_target_path))
+    if previous_best_path is not None:
+        items.append(("previous best", previous_best_path))
+    if generated_path is not None:
+        items.append(("generated", generated_path))
+
+    thumb_width = 220
+    thumb_height = 280
+    label_height = 24
+    padding = 16
+    width = padding + len(items) * thumb_width + (len(items) - 1) * padding + padding
+    height = padding + label_height + thumb_height + padding
+    sheet = Image.new("RGB", (width, height), "black")
+    draw = ImageDraw.Draw(sheet)
+    font = ImageFont.load_default()
+
+    for index, (label, image_path) in enumerate(items):
+        x = padding + index * (thumb_width + padding)
+        draw.text((x, padding), label, fill="white", font=font)
+        with Image.open(image_path) as image:
+            thumbnail = image.convert("RGB")
+            thumbnail.thumbnail((thumb_width, thumb_height), Image.Resampling.LANCZOS)
+            image_x = x + (thumb_width - thumbnail.width) // 2
+            image_y = padding + label_height + (thumb_height - thumbnail.height) // 2
+            sheet.paste(thumbnail, (image_x, image_y))
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    sheet.save(output_path)
