@@ -33,10 +33,10 @@ def test_render_training_config_uses_flux2_klein_base_4b(tmp_path: Path) -> None
         output_dir=output_dir,
     )
 
-    assert 'black-forest-labs/FLUX.2-klein-base-4B' in config_text
+    assert "black-forest-labs/FLUX.2-klein-base-4B" in config_text
     assert 'trigger: "K4BMAKEUP03"' in config_text
-    assert 'steps: 1800' in config_text
-    assert 'resolution:' in config_text
+    assert "steps: 1800" in config_text
+    assert "resolution:" in config_text
     assert str(dataset_dir) in config_text
     assert str(output_dir) in config_text
 
@@ -63,7 +63,7 @@ def test_render_training_config_sets_flux2_klein_arch_defaults(
     assert 'arch: "flux2_klein_4b"' in config_text
     assert 'noise_scheduler: "flowmatch"' in config_text
     assert 'sampler: "flowmatch"' in config_text
-    assert 'quantize_te: true' in config_text
+    assert "quantize_te: true" in config_text
     assert 'qtype: "qfloat8"' in config_text
 
 
@@ -92,9 +92,7 @@ def test_train_lora_cli_help_exits_without_starting_training() -> None:
     assert "--config" in result.stdout
 
 
-def test_train_lora_cli_writes_config_from_custom_inputs(
-    monkeypatch, tmp_path: Path
-) -> None:
+def test_train_lora_cli_writes_config_from_custom_inputs(monkeypatch, tmp_path: Path) -> None:
     run_calls: dict[str, object] = {}
     template_path = tmp_path / "train.template.yaml"
     template_path.write_text(
@@ -152,10 +150,7 @@ def test_train_lora_cli_writes_config_from_custom_inputs(
     config_path = run_dir / "train_config.yaml"
     assert config_path.exists()
     assert config_path.read_text(encoding="utf-8") == (
-        "job: extension\n"
-        "config:\n"
-        f"  dataset: \"{dataset_dir}\"\n"
-        f"  output: \"{run_dir}\"\n"
+        f'job: extension\nconfig:\n  dataset: "{dataset_dir}"\n  output: "{run_dir}"\n'
     )
     assert run_calls["check"] is True
     assert run_calls["command"] == [

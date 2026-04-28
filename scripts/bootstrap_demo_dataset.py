@@ -61,9 +61,7 @@ def main() -> None:
             for identity in ids:
                 members = resolve_archive_members(archive_names, identity)
                 if members is None:
-                    raise FileNotFoundError(
-                        f"Missing archive members for identity {identity}."
-                    )
+                    raise FileNotFoundError(f"Missing archive members for identity {identity}.")
                 bare_name, target_name = members
                 ref_path = refs_dir / f"{identity}.jpg"
                 tgt_path = split_dir / f"{identity}.jpg"

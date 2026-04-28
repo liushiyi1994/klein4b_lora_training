@@ -14,11 +14,7 @@ from klein4b.demo_dataset import (
 
 
 def load_bootstrap_module():
-    script_path = (
-        Path(__file__).resolve().parents[1]
-        / "scripts"
-        / "bootstrap_demo_dataset.py"
-    )
+    script_path = Path(__file__).resolve().parents[1] / "scripts" / "bootstrap_demo_dataset.py"
     spec = importlib.util.spec_from_file_location("bootstrap_demo_dataset", script_path)
     assert spec is not None
     assert spec.loader is not None

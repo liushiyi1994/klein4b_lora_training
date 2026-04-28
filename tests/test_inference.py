@@ -118,9 +118,7 @@ def test_run_local_inference_uses_lora_seed_and_saves_output(
     }
 
 
-def test_run_local_inference_requires_cuda(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_run_local_inference_requires_cuda(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     fake_torch = types.ModuleType("torch")
     fake_torch.cuda = types.SimpleNamespace(is_available=lambda: False)
 
@@ -139,9 +137,7 @@ def test_run_inference_cli_wires_prompt_and_paths(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     run_calls: dict[str, object] = {}
-    module_path = (
-        Path(__file__).resolve().parents[1] / "scripts" / "run_inference.py"
-    )
+    module_path = Path(__file__).resolve().parents[1] / "scripts" / "run_inference.py"
     spec = importlib.util.spec_from_file_location("task5_run_inference", module_path)
     assert spec is not None
     assert spec.loader is not None
