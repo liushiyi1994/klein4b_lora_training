@@ -47,6 +47,7 @@ SUPPRESSED_SELFIE_ARTIFACT_TERMS = (
     "bow-shaped",
     "camera perspective",
     "catchlight",
+    "circlet",
     "colored eye",
     "colored lip",
     "complexion",
@@ -71,6 +72,7 @@ SUPPRESSED_SELFIE_ARTIFACT_TERMS = (
     "t-shirt",
     "teeth",
     "thumbs up",
+    "tiara",
     "watch",
 )
 
@@ -103,9 +105,7 @@ EMPTY_ORNAMENT_TERMS = (
     "no ornaments",
 )
 
-ALLOWED_CLASSICAL_ORNAMENT_TERMS = (
-    "ancient",
-    "classical",
+ALLOWED_GREEK_ORNAMENT_TERMS = (
     "greek",
     "laurel",
 )
@@ -155,13 +155,13 @@ FORBIDDEN_TARGET_STYLE_TERMS = (
 
 FIXED_PROMPT_CONSTRAINTS = (
     "Use the reference portrait as the only identity, pose, face-structure, "
-    "hair silhouette, explicitly Greek or classical headwear or ornament "
+    "hair silhouette, explicitly Greek headwear or ornament "
     "silhouette, and broad-expression source. "
     "Use the reference portrait as the only source for identity-bearing face "
     "structure, pose and head angle, age cues, gender presentation cues, hair "
-    "silhouette, facial hair shape, explicitly Greek or classical headwear or "
-    "ornament shape, and broad expression only when useful. Omit headwear or "
-    "accessories unless they are explicitly Greek or classical and can become "
+    "silhouette, facial hair shape, explicitly Greek headwear or ornament "
+    "shape, and broad expression only when useful. Omit headwear or "
+    "accessories unless they are explicitly Greek and can become "
     "carved stone. Always preserve the selfie head direction and head angle; do not "
     "normalize the bust to a frontal view unless the selfie is frontal. "
     "Always preserve the selfie hairstyle as carved marble, including length, part, "
@@ -172,7 +172,7 @@ FIXED_PROMPT_CONSTRAINTS = (
     "The eyes must be blank sculpted stone eyes or closed carved eyelids; "
     "no pupils, no irises, no colored eyes, no catchlights, no painted eyes, "
     "no realistic human eyes. Hair, eyebrows, facial hair, and any allowed "
-    "Greek or classical head covering or ornament must be carved from the same "
+    "Greek head covering or ornament must be carved from the same "
     "marble as the face. Use matte weathered grey marble, rough pitted "
     "low-albedo face surface, dry chalky unpolished stone, uneven grey-brown "
     "mineral patina, grime in recesses, chipped edges, and localized lava only "
@@ -193,7 +193,7 @@ PLANNER_INSTRUCTIONS = (
     "You will receive exactly one image: the selfie/reference portrait. Treat that "
     "single image as the only source for identity-bearing face structure, pose "
     "and head angle, head direction, broad expression only if useful, hair "
-    "silhouette, hairstyle, facial hair shape, explicitly Greek or classical "
+    "silhouette, hairstyle, facial hair shape, explicitly Greek "
     "headwear shape, age cues, "
     "gender presentation cues, and "
     "distinctive non-modern ornaments only if they can become carved stone. "
@@ -208,7 +208,7 @@ PLANNER_INSTRUCTIONS = (
     "caps, headscarves, headwraps, turbans, veils, selfie lighting, camera "
     "perspective artifacts, skin texture, makeup, colored lips or eyes, hand "
     "gestures, peace signs, thumbs up, exaggerated facial expression, and "
-    "photographic background. Keep only explicitly Greek or classical ornaments, "
+    "photographic background. Keep only explicitly Greek ornaments, "
     "such as a laurel wreath, when they can become carved stone. Do not "
     "reinterpret bows, ribbons, clips, bands, caps, headscarves, headwraps, "
     "turbans, or veils as classical ornaments. Do not include "
@@ -517,6 +517,7 @@ def plan_prompt_with_bedrock_nova(
     )
     text = _bedrock_response_text(response)
     payload = _json_object_from_model_text(text, "Bedrock Nova planner")
+    payload = _sanitize_bedrock_prompt_plan_payload(payload)
     return parse_prompt_plan(payload)
 
 
@@ -570,6 +571,35 @@ def _json_object_from_model_text(text: str, source_name: str) -> Mapping[str, An
     if not isinstance(payload, Mapping):
         raise PromptPlanError(f"{source_name} returned JSON that is not an object")
     return payload
+
+
+def _sanitize_bedrock_prompt_plan_payload(payload: Mapping[str, Any]) -> Mapping[str, Any]:
+    target_style = payload.get("target_style")
+    if not isinstance(target_style, Mapping):
+        return payload
+
+    sanitized_payload = dict(payload)
+    sanitized_target = dict(target_style)
+    for field_name in ("drapery_and_torso", "headpiece_or_ornament"):
+        value = target_style.get(field_name)
+        if isinstance(value, list):
+            sanitized_target[field_name] = [
+                item
+                for item in value
+                if not isinstance(item, str) or _find_forbidden_target_style_term(item) is None
+            ]
+
+    scalar_defaults = {
+        "bust_framing": "classical bust cropped at upper chest",
+        "statue_angle": "matching the reference head angle",
+    }
+    for field_name, default_value in scalar_defaults.items():
+        value = target_style.get(field_name)
+        if isinstance(value, str) and _find_forbidden_target_style_term(value) is not None:
+            sanitized_target[field_name] = default_value
+
+    sanitized_payload["target_style"] = sanitized_target
+    return sanitized_payload
 
 
 def _json_object_from_wrapped_text(text: str, source_name: str) -> Mapping[str, Any]:
@@ -724,7 +754,7 @@ def _sanitize_reference_phrase(phrase: str, *, strip_color_words: bool = False) 
         return ""
     if strip_color_words and _contains_suppressed_non_greek_headwear(sanitized):
         return ""
-    if strip_color_words and _contains_generic_non_classical_headwear_or_ornament(sanitized):
+    if strip_color_words and _contains_generic_non_greek_headwear_or_ornament(sanitized):
         return ""
 
     sanitized = re.sub(r"\bfacing\s+(?:the\s+)?camera\b", "facing forward", sanitized, flags=re.I)
@@ -747,7 +777,7 @@ def _sanitize_ornament_phrase(phrase: str) -> str:
         return ""
     if _contains_suppressed_non_greek_headwear(phrase):
         return ""
-    if _has_allowed_classical_ornament_term(phrase):
+    if _has_allowed_greek_ornament_term(phrase):
         return _normalize_phrase_whitespace(phrase)
     return ""
 
@@ -759,8 +789,8 @@ def _contains_suppressed_non_greek_headwear(phrase: str) -> bool:
     return False
 
 
-def _contains_generic_non_classical_headwear_or_ornament(phrase: str) -> bool:
-    if _has_allowed_classical_ornament_term(phrase):
+def _contains_generic_non_greek_headwear_or_ornament(phrase: str) -> bool:
+    if _has_allowed_greek_ornament_term(phrase):
         return False
     for term in sorted(GENERIC_HEADWEAR_OR_ORNAMENT_TERMS, key=len, reverse=True):
         if _identity_label_pattern(term).search(phrase):
@@ -768,9 +798,9 @@ def _contains_generic_non_classical_headwear_or_ornament(phrase: str) -> bool:
     return False
 
 
-def _has_allowed_classical_ornament_term(phrase: str) -> bool:
+def _has_allowed_greek_ornament_term(phrase: str) -> bool:
     return any(
-        _identity_label_pattern(term).search(phrase) for term in ALLOWED_CLASSICAL_ORNAMENT_TERMS
+        _identity_label_pattern(term).search(phrase) for term in ALLOWED_GREEK_ORNAMENT_TERMS
     )
 
 

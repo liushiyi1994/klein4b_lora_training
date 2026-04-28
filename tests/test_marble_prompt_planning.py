@@ -88,7 +88,8 @@ def test_planner_instructions_translate_selfie_cues_without_artifacts() -> None:
     assert "turbans" in instructions
     assert "do not reinterpret bows" in instructions
     assert "do not reinterpret" in instructions
-    assert "only explicitly greek or classical ornaments" in instructions
+    assert "only explicitly greek ornaments" in instructions
+    assert "greek or classical ornaments" not in instructions
     assert "hand gestures" in instructions
     assert "race or ethnicity labels" in instructions
 
@@ -151,7 +152,9 @@ def test_render_marble_prompt_is_final_image_prompt_with_fixed_constraints() -> 
     assert "asymmetrical stone lighting" in prompt
     assert "dark ember background" in prompt
     assert "localized lava only in the broken lower base" in prompt
-    assert "Omit headwear or accessories unless they are explicitly Greek or classical" in prompt
+    assert "Omit headwear or accessories unless they are explicitly Greek" in prompt
+    assert "Greek or classical headwear" not in prompt
+    assert "Greek or classical head covering" not in prompt
     assert "no pupils" in prompt
     assert "no irises" in prompt
     assert "no catchlights" in prompt
@@ -204,6 +207,8 @@ def test_render_marble_prompt_suppresses_selfie_artifact_details() -> None:
                 "yellow headband or hair accessory",
                 "dark eyeglass frames",
                 "large bow-like headwear silhouette",
+                "decorative circlet",
+                "small tiara",
             ],
             "broad_expression": "open-mouthed laugh with visible upper teeth",
         },
@@ -221,6 +226,8 @@ def test_render_marble_prompt_suppresses_selfie_artifact_details() -> None:
     assert "yellow" not in prompt
     assert "headband" not in prompt
     assert "bow" not in prompt
+    assert "circlet" not in prompt
+    assert "tiara" not in prompt
     assert "eyeglass" not in prompt
     assert "open-mouthed" not in prompt
     assert "visible upper teeth" not in prompt
@@ -235,6 +242,8 @@ def test_render_marble_prompt_keeps_greek_style_ornaments_only() -> None:
                 "classical Greek laurel wreath carved as stone relief",
                 "modern bow-shaped ribbon ornament",
                 "carved bow-like hair ornament retained in simplified classical form",
+                "stylized carved headpiece inspired by classical motifs",
+                "ancient ceremonial headpiece carved as stone",
             ],
         },
     }
@@ -245,6 +254,8 @@ def test_render_marble_prompt_keeps_greek_style_ornaments_only() -> None:
     assert "classical Greek laurel wreath carved as stone relief" in prompt
     assert "modern bow-shaped ribbon ornament" not in prompt
     assert "carved bow-like hair ornament" not in prompt
+    assert "classical motifs" not in prompt
+    assert "ancient ceremonial headpiece" not in prompt
 
 
 def test_render_marble_prompt_suppresses_non_greek_headwear() -> None:
@@ -448,3 +459,37 @@ def test_bedrock_nova_planner_extracts_json_from_text_wrapper(tmp_path: Path) ->
     plan = plan_prompt_with_bedrock_nova(reference_path=reference, client=FakeBedrockClient())
 
     assert plan.reference_identity.age_band == "child"
+
+
+def test_bedrock_nova_planner_drops_material_language_from_target_style(
+    tmp_path: Path,
+) -> None:
+    from klein4b.marble_prompt_planning import plan_prompt_with_bedrock_nova
+
+    reference = tmp_path / "selfie.png"
+    reference.write_bytes(b"fake-image")
+    payload = {
+        **VALID_PLAN,
+        "target_style": {
+            **VALID_PLAN["target_style"],
+            "drapery_and_torso": [
+                "simple classical drapery",
+                "smooth surface treatment with polished finish",
+            ],
+            "headpiece_or_ornament": [
+                "classical Greek laurel wreath carved as stone relief",
+                "background-like decorative surface glow",
+            ],
+        },
+    }
+
+    class FakeBedrockClient:
+        def converse(self, **_kwargs: object) -> object:
+            return {"output": {"message": {"content": [{"text": json.dumps(payload)}]}}}
+
+    plan = plan_prompt_with_bedrock_nova(reference_path=reference, client=FakeBedrockClient())
+
+    assert plan.target_style.drapery_and_torso == ("simple classical drapery",)
+    assert plan.target_style.headpiece_or_ornament == (
+        "classical Greek laurel wreath carved as stone relief",
+    )
