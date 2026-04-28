@@ -1,0 +1,63 @@
+job: extension
+config:
+  name: marble_bust_v2_hair_style
+  process:
+    - type: diffusion_trainer
+      training_folder: "{{ training_folder }}"
+      device: "cuda"
+      trigger_word: "<mrblbust>"
+      network:
+        type: "lora"
+        linear: 32
+        linear_alpha: 32
+        conv: 16
+        conv_alpha: 16
+      save:
+        dtype: "bf16"
+        save_every: 200
+        max_step_saves_to_keep: 3
+      datasets:
+        - folder_path: "{{ dataset_dir }}"
+          caption_ext: "txt"
+          cache_latents_to_disk: true
+          resolution:
+            - 768
+      train:
+        batch_size: 1
+        steps: 2000
+        gradient_accumulation_steps: 1
+        train_unet: true
+        train_text_encoder: false
+        gradient_checkpointing: true
+        lr: 0.00006
+        noise_scheduler: "flowmatch"
+        optimizer: "adamw8bit"
+        timestep_type: "weighted"
+        content_or_style: "balanced"
+        dtype: "bf16"
+        unload_text_encoder: false
+      model:
+        arch: "flux2_klein_4b"
+        name_or_path: "black-forest-labs/FLUX.2-klein-base-4B"
+        quantize: true
+        quantize_te: true
+        qtype: "qfloat8"
+        qtype_te: "qfloat8"
+        low_vram: true
+        model_kwargs:
+          match_target_res: false
+      sample:
+        sampler: "flowmatch"
+        sample_every: 200
+        width: 768
+        height: 1024
+        prompts:
+          - "[trigger], centered marble statue bust shown chest-up, visible shoulders and upper torso, classical draped garment, stone-carved marble hair with broad chiseled grooves and solid stone masses, cracked stone carving, blank sculpted eyes, dark ember-lit background, jagged broken marble base with glowing fissures, full bust in frame"
+          - "[trigger], centered Greek marble statue bust shown chest-up, visible shoulders and upper torso, ornate cuirass, stone-carved marble hair with broad chiseled grooves and solid stone masses, cracked stone carving, blank sculpted eyes, dark ember-lit background, jagged broken marble base with glowing fissures, full bust in frame"
+        neg: "head-only crop, close-up face, cropped shoulders, cropped torso, individual hair strands, natural hair color, glossy hair, soft hair strands, realistic hair texture, modern eyewear, modern accessories, duplicate figures, side-by-side views, collage"
+        seed: 7
+        guidance_scale: 4
+        sample_steps: 20
+meta:
+  name: "marble_bust_v2_hair_style"
+  version: "2.0"

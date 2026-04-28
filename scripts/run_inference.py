@@ -17,6 +17,7 @@ def main() -> None:
     parser.add_argument("--reference", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--lora", type=Path, default=None)
+    parser.add_argument("--lora-scale", type=float, default=1.0)
     args = parser.parse_args()
 
     run_local_inference(
@@ -24,6 +25,7 @@ def main() -> None:
         prompt=build_demo_prompt("K4BMAKEUP03"),
         output_path=args.output,
         lora_path=args.lora,
+        lora_scale=args.lora_scale,
     )
 
 

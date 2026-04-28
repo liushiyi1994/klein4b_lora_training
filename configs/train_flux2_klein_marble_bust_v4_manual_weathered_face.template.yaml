@@ -1,0 +1,63 @@
+job: extension
+config:
+  name: marble_bust_v4_manual_weathered_face_style
+  process:
+    - type: diffusion_trainer
+      training_folder: "{{ training_folder }}"
+      device: "cuda"
+      trigger_word: "<mrblbust>"
+      network:
+        type: "lora"
+        linear: 32
+        linear_alpha: 32
+        conv: 16
+        conv_alpha: 16
+      save:
+        dtype: "bf16"
+        save_every: 200
+        max_step_saves_to_keep: 3
+      datasets:
+        - folder_path: "{{ dataset_dir }}"
+          caption_ext: "txt"
+          cache_latents_to_disk: true
+          resolution:
+            - 768
+      train:
+        batch_size: 1
+        steps: 2000
+        gradient_accumulation_steps: 1
+        train_unet: true
+        train_text_encoder: false
+        gradient_checkpointing: true
+        lr: 0.00006
+        noise_scheduler: "flowmatch"
+        optimizer: "adamw8bit"
+        timestep_type: "weighted"
+        content_or_style: "balanced"
+        dtype: "bf16"
+        unload_text_encoder: false
+      model:
+        arch: "flux2_klein_4b"
+        name_or_path: "black-forest-labs/FLUX.2-klein-base-4B"
+        quantize: true
+        quantize_te: true
+        qtype: "qfloat8"
+        qtype_te: "qfloat8"
+        low_vram: true
+        model_kwargs:
+          match_target_res: false
+      sample:
+        sampler: "flowmatch"
+        sample_every: 200
+        width: 768
+        height: 1024
+        prompts:
+          - "[trigger], centered marble statue bust shown chest-up, visible shoulders and upper torso, classical draped garment, dark ash-grey weathered marble, dirty brown-grey mineral patina across the face, rough pitted low-albedo face surface, dry chalky unpolished stone, fine cracks across cheeks brow neck and torso, subdued uneven ambient side lighting, no frontal studio key light, no perfect beauty lighting, stone-carved marble hair with broad chiseled grooves and solid stone masses, blank sculpted eyes, controlled dramatic dark background with sparse ember particles behind the bust, the bottom of the bust terminates directly in a jagged irregular broken marble edge with missing chunks, small localized orange-red lava fissures only inside that broken bottom edge, no separate rock pedestal, no loose rocks below, lava glow does not illuminate face hair torso or background, full bust in frame"
+          - "[trigger], centered Greek marble statue bust shown chest-up, visible shoulders and upper torso, ornate cuirass, dark dirty grey-brown marble, smoky mineral staining across face armor and hair, rough porous matte face, dry unsealed stone with grime in carved details, low-contrast off-axis lighting, no head-on portrait light, no clean porcelain face, stone-carved marble hair with broad chiseled grooves and solid stone masses, blank sculpted eyes, controlled dramatic dark background with sparse ember particles behind the bust, the bottom of the bust terminates directly in a jagged irregular broken marble edge with missing chunks, small localized orange-red lava fissures only inside that broken bottom edge, no separate rock pedestal, no loose rocks below, lava glow does not illuminate face hair torso or background, full bust in frame"
+        neg: "head-only crop, close-up face, cropped shoulders, cropped torso, loose rocks, separate rock pile, rock pedestal, debris below bust, flat plinth, individual hair strands, natural hair color, glossy hair, polished marble, wet shine, specular hotspots, frontal studio light, head-on key light, beauty lighting, perfect portrait lighting, spotlight on face, smooth porcelain face, overexposed white face, clean bright cheeks, shiny forehead, shiny nose, shiny lips, red or orange light on face, red or orange light on hair, glowing skin, glowing hair, soft hair strands, realistic hair texture, modern eyewear, modern accessories, duplicate figures, side-by-side views, collage"
+        seed: 7
+        guidance_scale: 4
+        sample_steps: 20
+meta:
+  name: "marble_bust_v4_manual_weathered_face_style"
+  version: "4.0"
