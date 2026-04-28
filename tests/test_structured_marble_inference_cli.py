@@ -159,6 +159,57 @@ def test_cli_runs_ai_toolkit_through_python_and_records_generated_output(
     assert (output_dir / "contact_sheet.jpg").exists()
 
 
+def test_cli_can_plan_with_bedrock_nova_provider(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = load_cli_module()
+    reference = tmp_path / "selfie.png"
+    output_dir = tmp_path / "out"
+    Image.new("RGB", (12, 16), "red").save(reference)
+    calls: list[dict[str, object]] = []
+
+    def fail_openai(*args: object, **kwargs: object) -> object:
+        raise AssertionError("OpenAI planner must not run for Bedrock Nova provider")
+
+    def fake_bedrock_plan(**kwargs: object) -> object:
+        calls.append(dict(kwargs))
+        return module.parse_prompt_plan(VALID_PLAN)
+
+    monkeypatch.setattr(module, "plan_prompt_with_openai", fail_openai)
+    monkeypatch.setattr(module, "plan_prompt_with_bedrock_nova", fake_bedrock_plan)
+
+    module.main(
+        [
+            "--reference",
+            str(reference),
+            "--output-dir",
+            str(output_dir),
+            "--planner-provider",
+            "bedrock-nova",
+            "--model",
+            "us.amazon.nova-2-lite-v1:0",
+            "--aws-region",
+            "us-east-1",
+            "--no-run-ai-toolkit",
+        ]
+    )
+
+    run_config = json.loads((output_dir / "run_config.json").read_text(encoding="utf-8"))
+
+    assert calls == [
+        {
+            "reference_path": reference,
+            "model": "us.amazon.nova-2-lite-v1:0",
+            "region_name": "us-east-1",
+        }
+    ]
+    assert run_config["planner_provider"] == "bedrock-nova"
+    assert run_config["model"] == "us.amazon.nova-2-lite-v1:0"
+    assert run_config["aws_region"] == "us-east-1"
+    assert run_config["used_openai"] is False
+
+
 def test_cli_rejects_skip_openai_without_prompt_plan_json(
     monkeypatch,
     tmp_path: Path,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -14,6 +15,7 @@ if str(SRC_DIR) not in sys.path:
 
 from klein4b.marble_prompt_planning import (  # noqa: E402
     parse_prompt_plan,
+    plan_prompt_with_bedrock_nova,
     plan_prompt_with_openai,
     render_marble_prompt,
 )
@@ -26,6 +28,8 @@ from klein4b.sample_style_inference import (  # noqa: E402
 )
 
 CONFIG_NAME = "structured_marble_inference"
+DEFAULT_OPENAI_MODEL = "gpt-5.4-mini"
+DEFAULT_BEDROCK_NOVA_MODEL = "us.amazon.nova-2-lite-v1:0"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -37,7 +41,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--pseudo-target", type=Path, default=None)
     parser.add_argument("--previous-best", type=Path, default=None)
     parser.add_argument("--lora", type=Path, default=DEFAULT_BEST_LORA_PATH)
-    parser.add_argument("--model", default="gpt-5.4-mini")
+    parser.add_argument("--planner-provider", choices=("openai", "bedrock-nova"), default="openai")
+    parser.add_argument("--model", default=None)
+    parser.add_argument(
+        "--aws-region",
+        default=os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "us-east-1",
+    )
     parser.add_argument("--prompt-plan-json", type=Path, default=None)
     parser.add_argument("--skip-openai", action="store_true")
     parser.add_argument("--no-run-ai-toolkit", action="store_true")
@@ -52,13 +61,22 @@ def main(argv: list[str] | None = None) -> None:
         parser.error("--skip-openai requires --prompt-plan-json")
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    planner_model = _resolve_planner_model(args.planner_provider, args.model)
 
     if args.skip_openai:
         prompt_plan_payload = json.loads(args.prompt_plan_json.read_text(encoding="utf-8"))
         prompt_plan = parse_prompt_plan(prompt_plan_payload)
         used_openai = False
+    elif args.planner_provider == "bedrock-nova":
+        prompt_plan = plan_prompt_with_bedrock_nova(
+            reference_path=args.reference,
+            model=planner_model,
+            region_name=args.aws_region,
+        )
+        prompt_plan_payload = _prompt_plan_to_payload(prompt_plan)
+        used_openai = False
     else:
-        prompt_plan = plan_prompt_with_openai(reference_path=args.reference, model=args.model)
+        prompt_plan = plan_prompt_with_openai(reference_path=args.reference, model=planner_model)
         prompt_plan_payload = _prompt_plan_to_payload(prompt_plan)
         used_openai = True
 
@@ -96,7 +114,9 @@ def main(argv: list[str] | None = None) -> None:
         "pseudo_target_role": "comparison-only",
         "previous_best": _optional_path(args.previous_best),
         "lora": str(args.lora),
-        "model": args.model,
+        "planner_provider": args.planner_provider,
+        "model": planner_model,
+        "aws_region": args.aws_region,
         "used_openai": used_openai,
         "no_run_ai_toolkit": args.no_run_ai_toolkit,
         "ai_toolkit_dir": str(args.ai_toolkit_dir),
@@ -121,6 +141,14 @@ def _optional_path(path: Path | None) -> str | None:
     if path is None:
         return None
     return str(path)
+
+
+def _resolve_planner_model(planner_provider: str, model: str | None) -> str:
+    if model is not None:
+        return model
+    if planner_provider == "bedrock-nova":
+        return DEFAULT_BEDROCK_NOVA_MODEL
+    return DEFAULT_OPENAI_MODEL
 
 
 def _prompt_plan_to_payload(prompt_plan) -> dict[str, object]:

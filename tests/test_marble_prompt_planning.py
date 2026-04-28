@@ -74,7 +74,9 @@ def test_planner_instructions_translate_selfie_cues_without_artifacts() -> None:
     assert "translate the person into a final marble bust" in instructions
     assert "do not describe the selfie" in instructions
     assert "identity-bearing face structure" in instructions
+    assert "head direction" in instructions
     assert "hair silhouette" in instructions
+    assert "hairstyle" in instructions
     assert "facial hair" in instructions
     assert "headwear shape" in instructions
     assert "modern clothing" in instructions
@@ -141,6 +143,8 @@ def test_render_marble_prompt_is_final_image_prompt_with_fixed_constraints() -> 
     assert "short bob-like hair silhouette" in prompt
     assert "centered chest-up Greek marble statue bust" in prompt
     assert "reference portrait as the only identity" in prompt
+    assert "preserve the selfie head direction and head angle" in prompt
+    assert "preserve the selfie hairstyle" in prompt
     assert "blank sculpted stone eyes or closed carved eyelids" in prompt
     assert "dry chalky unpolished stone" in prompt
     assert "subdued off-axis ambient lighting" in prompt
@@ -387,3 +391,60 @@ def test_openai_planner_wraps_invalid_json_response(tmp_path: Path) -> None:
 
     with pytest.raises(PromptPlanError, match="OpenAI planner returned invalid JSON"):
         plan_prompt_with_openai(reference_path=reference, client=FakeClient())
+
+
+def test_bedrock_nova_planner_sends_one_image_and_parses_json(tmp_path: Path) -> None:
+    from klein4b.marble_prompt_planning import plan_prompt_with_bedrock_nova
+
+    calls: dict[str, object] = {}
+    reference = tmp_path / "selfie.png"
+    reference.write_bytes(b"fake-image")
+
+    class FakeBedrockClient:
+        def converse(self, **kwargs: object) -> object:
+            calls["kwargs"] = kwargs
+            return {"output": {"message": {"content": [{"text": json.dumps(VALID_PLAN)}]}}}
+
+    plan = plan_prompt_with_bedrock_nova(
+        reference_path=reference,
+        model="us.amazon.nova-2-lite-v1:0",
+        client=FakeBedrockClient(),
+    )
+
+    kwargs = calls["kwargs"]
+    assert kwargs["modelId"] == "us.amazon.nova-2-lite-v1:0"
+    assert kwargs["inferenceConfig"]["maxTokens"] == 2048
+    assert kwargs["inferenceConfig"]["temperature"] == 0
+    assert len(kwargs["messages"]) == 1
+    content = kwargs["messages"][0]["content"]
+    image_blocks = [block["image"] for block in content if "image" in block]
+    text_blocks = [block["text"] for block in content if "text" in block]
+    assert len(image_blocks) == 1
+    assert image_blocks[0]["format"] == "png"
+    assert image_blocks[0]["source"]["bytes"] == b"fake-image"
+    assert "pseudo" not in str(kwargs).lower()
+    assert "Return only valid JSON" in text_blocks[0]
+    assert plan.reference_identity.age_band == "child"
+
+
+def test_bedrock_nova_planner_extracts_json_from_text_wrapper(tmp_path: Path) -> None:
+    from klein4b.marble_prompt_planning import plan_prompt_with_bedrock_nova
+
+    reference = tmp_path / "selfie.jpg"
+    reference.write_bytes(b"fake-image")
+
+    class FakeBedrockClient:
+        def converse(self, **_kwargs: object) -> object:
+            return {
+                "output": {
+                    "message": {
+                        "content": [
+                            {"text": f"Here is the JSON:\n```json\n{json.dumps(VALID_PLAN)}\n```"}
+                        ]
+                    }
+                }
+            }
+
+    plan = plan_prompt_with_bedrock_nova(reference_path=reference, client=FakeBedrockClient())
+
+    assert plan.reference_identity.age_band == "child"

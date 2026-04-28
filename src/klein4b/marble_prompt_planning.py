@@ -162,7 +162,11 @@ FIXED_PROMPT_CONSTRAINTS = (
     "silhouette, facial hair shape, explicitly Greek or classical headwear or "
     "ornament shape, and broad expression only when useful. Omit headwear or "
     "accessories unless they are explicitly Greek or classical and can become "
-    "carved stone. Translate the person into a final marble bust rather than "
+    "carved stone. Always preserve the selfie head direction and head angle; do not "
+    "normalize the bust to a frontal view unless the selfie is frontal. "
+    "Always preserve the selfie hairstyle as carved marble, including length, part, "
+    "bangs, volume, curl or straightness, updo, hairline, and overall hair "
+    "mass. Translate the person into a final marble bust rather than "
     "describing selfie artifacts. Convert broad smiles or laughter into a "
     "subtle carved smile or soft neutral expression, and omit hand gestures. "
     "The eyes must be blank sculpted stone eyes or closed carved eyelids; "
@@ -188,10 +192,15 @@ PLANNER_INSTRUCTIONS = (
     "You are planning a prompt for a selfie-to-Greek-marble-statue-bust pipeline. "
     "You will receive exactly one image: the selfie/reference portrait. Treat that "
     "single image as the only source for identity-bearing face structure, pose "
-    "and head angle, broad expression only if useful, hair silhouette, facial "
-    "hair shape, explicitly Greek or classical headwear shape, age cues, "
+    "and head angle, head direction, broad expression only if useful, hair "
+    "silhouette, hairstyle, facial hair shape, explicitly Greek or classical "
+    "headwear shape, age cues, "
     "gender presentation cues, and "
     "distinctive non-modern ornaments only if they can become carved stone. "
+    "Preserve the selfie head direction and head angle; do not normalize the "
+    "person to a frontal bust unless the selfie is frontal. Preserve the "
+    "selfie hairstyle as carved marble, including length, part, bangs, volume, "
+    "curl or straightness, updo, hairline, and overall hair mass. "
     "Translate the person into a final marble bust; do not describe the selfie. "
     "A smile can become a subtle carved smile or soft neutral expression. "
     "Suppress modern clothing, glasses, earbuds, watches, phones, jewelry that "
@@ -460,6 +469,57 @@ def plan_prompt_with_openai(
     return parse_prompt_plan(payload)
 
 
+def plan_prompt_with_bedrock_nova(
+    reference_path: Path,
+    model: str = "us.amazon.nova-2-lite-v1:0",
+    region_name: str | None = None,
+    client: object | None = None,
+) -> PromptPlan:
+    """Request a prompt plan from Amazon Nova using only the reference selfie."""
+
+    if client is None:
+        import boto3
+        from botocore.config import Config
+
+        client = boto3.client(
+            "bedrock-runtime",
+            region_name=region_name,
+            config=Config(
+                connect_timeout=3600,
+                read_timeout=3600,
+                retries={"max_attempts": 1},
+            ),
+        )
+
+    prompt = (
+        f"{PLANNER_INSTRUCTIONS}\n\n"
+        "Return only valid JSON, with no Markdown fences or commentary. "
+        "The JSON must validate against this schema:\n"
+        f"{json.dumps(build_prompt_plan_schema()['schema'], indent=2)}"
+    )
+    response = client.converse(
+        modelId=model,
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {"text": prompt},
+                    {
+                        "image": {
+                            "format": _bedrock_image_format(reference_path),
+                            "source": {"bytes": reference_path.read_bytes()},
+                        }
+                    },
+                ],
+            }
+        ],
+        inferenceConfig={"maxTokens": 2048, "temperature": 0},
+    )
+    text = _bedrock_response_text(response)
+    payload = _json_object_from_model_text(text, "Bedrock Nova planner")
+    return parse_prompt_plan(payload)
+
+
 def _object_schema(properties: Mapping[str, dict[str, Any]]) -> dict[str, Any]:
     return {
         "type": "object",
@@ -467,6 +527,68 @@ def _object_schema(properties: Mapping[str, dict[str, Any]]) -> dict[str, Any]:
         "properties": dict(properties),
         "required": list(properties),
     }
+
+
+def _bedrock_image_format(reference_path: Path) -> str:
+    suffix = reference_path.suffix.lower()
+    if suffix in {".jpg", ".jpeg"}:
+        return "jpeg"
+    if suffix == ".png":
+        return "png"
+    if suffix == ".webp":
+        return "webp"
+    if suffix == ".gif":
+        return "gif"
+    raise PromptPlanError(f"Unsupported image format for Bedrock Nova: {reference_path}")
+
+
+def _bedrock_response_text(response: object) -> str:
+    if not isinstance(response, Mapping):
+        raise PromptPlanError("Bedrock Nova planner returned an invalid response shape")
+    try:
+        content = response["output"]["message"]["content"]
+    except KeyError as error:
+        raise PromptPlanError("Bedrock Nova planner returned an invalid response shape") from error
+    if not isinstance(content, list):
+        raise PromptPlanError("Bedrock Nova planner returned an invalid response shape")
+
+    text_parts: list[str] = []
+    for block in content:
+        if isinstance(block, Mapping) and isinstance(block.get("text"), str):
+            text_parts.append(block["text"])
+    if not text_parts:
+        raise PromptPlanError("Bedrock Nova planner returned no text")
+    return "\n".join(text_parts)
+
+
+def _json_object_from_model_text(text: str, source_name: str) -> Mapping[str, Any]:
+    text = text.strip()
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        payload = _json_object_from_wrapped_text(text, source_name)
+    if not isinstance(payload, Mapping):
+        raise PromptPlanError(f"{source_name} returned JSON that is not an object")
+    return payload
+
+
+def _json_object_from_wrapped_text(text: str, source_name: str) -> Mapping[str, Any]:
+    fence_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, flags=re.S | re.I)
+    if fence_match is not None:
+        candidate = fence_match.group(1)
+    else:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start == -1 or end == -1 or end <= start:
+            raise PromptPlanError(f"{source_name} returned invalid JSON")
+        candidate = text[start : end + 1]
+    try:
+        payload = json.loads(candidate)
+    except json.JSONDecodeError as error:
+        raise PromptPlanError(f"{source_name} returned invalid JSON") from error
+    if not isinstance(payload, Mapping):
+        raise PromptPlanError(f"{source_name} returned JSON that is not an object")
+    return payload
 
 
 def _mapping_field(payload: Mapping[str, Any], field_name: str) -> Mapping[str, Any]:
@@ -692,6 +814,7 @@ __all__ = [
     "build_prompt_plan_schema",
     "image_path_to_data_url",
     "parse_prompt_plan",
+    "plan_prompt_with_bedrock_nova",
     "plan_prompt_with_openai",
     "render_marble_prompt",
 ]
