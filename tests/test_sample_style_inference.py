@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import yaml
@@ -52,6 +53,7 @@ def test_build_ai_toolkit_command_points_to_run_py(tmp_path: Path) -> None:
     command = build_ai_toolkit_command(tmp_path / "vendor" / "ai-toolkit", tmp_path / "config.yaml")
 
     assert command == [
+        sys.executable,
         str(tmp_path / "vendor" / "ai-toolkit" / "run.py"),
         str(tmp_path / "config.yaml"),
     ]

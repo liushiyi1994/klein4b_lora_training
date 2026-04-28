@@ -82,8 +82,8 @@ def main(argv: list[str] | None = None) -> None:
     )
 
     generated_path = None
+    command = build_ai_toolkit_command(args.ai_toolkit_dir, ai_toolkit_config_path)
     if not args.no_run_ai_toolkit:
-        command = build_ai_toolkit_command(args.ai_toolkit_dir, ai_toolkit_config_path)
         subprocess.run(command, check=True)
         latest_sample = find_latest_sample(args.output_dir / CONFIG_NAME / "samples")
         generated_path = args.output_dir / f"generated{latest_sample.suffix.lower()}"
@@ -99,6 +99,8 @@ def main(argv: list[str] | None = None) -> None:
         "model": args.model,
         "used_openai": used_openai,
         "no_run_ai_toolkit": args.no_run_ai_toolkit,
+        "ai_toolkit_dir": str(args.ai_toolkit_dir),
+        "ai_toolkit_command": command,
         "ai_toolkit_config": str(ai_toolkit_config_path),
         "prompt": str(prompt_path),
         "prompt_plan": str(prompt_plan_path),

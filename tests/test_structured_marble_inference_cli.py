@@ -101,3 +101,92 @@ def test_cli_replays_cached_prompt_plan_without_openai_or_ai_toolkit(
     )
     assert (output_dir / "sample_style_inference.yaml").exists()
     assert (output_dir / "contact_sheet.jpg").exists()
+
+
+def test_cli_runs_ai_toolkit_through_python_and_records_generated_output(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = load_cli_module()
+    reference = tmp_path / "selfie.png"
+    prompt_plan_json = tmp_path / "plan.json"
+    output_dir = tmp_path / "out"
+    ai_toolkit_dir = tmp_path / "vendor" / "ai-toolkit"
+    Image.new("RGB", (12, 16), "red").save(reference)
+    prompt_plan_json.write_text(json.dumps(VALID_PLAN), encoding="utf-8")
+    ai_toolkit_dir.mkdir(parents=True)
+    calls: list[dict[str, object]] = []
+
+    def fake_run(command: list[str], check: bool) -> None:
+        calls.append({"command": command, "check": check})
+        samples_dir = output_dir / "structured_marble_inference" / "samples"
+        samples_dir.mkdir(parents=True)
+        Image.new("RGB", (12, 16), "purple").save(samples_dir / "sample.jpg")
+
+    def fail_openai(*args: object, **kwargs: object) -> object:
+        raise AssertionError("OpenAI planner must not run in cached replay")
+
+    monkeypatch.setattr(module, "plan_prompt_with_openai", fail_openai)
+    monkeypatch.setattr(module.subprocess, "run", fake_run)
+
+    module.main(
+        [
+            "--reference",
+            str(reference),
+            "--prompt-plan-json",
+            str(prompt_plan_json),
+            "--skip-openai",
+            "--output-dir",
+            str(output_dir),
+            "--ai-toolkit-dir",
+            str(ai_toolkit_dir),
+        ]
+    )
+
+    generated_path = output_dir / "generated.jpg"
+    run_config = json.loads((output_dir / "run_config.json").read_text(encoding="utf-8"))
+
+    assert calls == [
+        {
+            "command": [
+                sys.executable,
+                str(ai_toolkit_dir / "run.py"),
+                str(output_dir / "sample_style_inference.yaml"),
+            ],
+            "check": True,
+        }
+    ]
+    assert generated_path.exists()
+    assert run_config["generated"] == str(generated_path)
+    assert run_config["ai_toolkit_dir"] == str(ai_toolkit_dir)
+    assert run_config["ai_toolkit_command"] == calls[0]["command"]
+    assert (output_dir / "contact_sheet.jpg").exists()
+
+
+def test_cli_rejects_skip_openai_without_prompt_plan_json(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = load_cli_module()
+    reference = tmp_path / "selfie.png"
+    output_dir = tmp_path / "out"
+    Image.new("RGB", (12, 16), "red").save(reference)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "run_structured_marble_inference.py",
+            "--reference",
+            str(reference),
+            "--skip-openai",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+
+    try:
+        module.main()
+    except SystemExit as error:
+        assert error.code == 2
+    else:
+        raise AssertionError("--skip-openai without --prompt-plan-json must fail")

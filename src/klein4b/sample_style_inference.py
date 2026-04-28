@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import yaml
@@ -91,7 +92,7 @@ def render_sample_style_config(
 
 
 def build_ai_toolkit_command(ai_toolkit_dir: Path, config_path: Path) -> list[str]:
-    return [str(ai_toolkit_dir / "run.py"), str(config_path)]
+    return [sys.executable, str(ai_toolkit_dir / "run.py"), str(config_path)]
 
 
 def find_latest_sample(samples_dir: Path) -> Path:
