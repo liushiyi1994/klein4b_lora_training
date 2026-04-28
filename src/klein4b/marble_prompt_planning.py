@@ -4,7 +4,7 @@ import base64
 import json
 import mimetypes
 import re
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -41,31 +41,175 @@ FORBIDDEN_IDENTITY_LABELS = (
     "white",
 )
 
+SUPPRESSED_SELFIE_ARTIFACT_TERMS = (
+    "background",
+    "bow",
+    "bow-shaped",
+    "camera perspective",
+    "catchlight",
+    "colored eye",
+    "colored lip",
+    "complexion",
+    "earbud",
+    "eyeglass",
+    "eyeliner",
+    "eyewear",
+    "glasses",
+    "hair accessory",
+    "hand gesture",
+    "headband",
+    "jacket",
+    "jewelry",
+    "lipstick",
+    "makeup",
+    "peace sign",
+    "phone",
+    "ribbon",
+    "selfie",
+    "shirt",
+    "skin texture",
+    "t-shirt",
+    "teeth",
+    "thumbs up",
+    "watch",
+)
+
+SUPPRESSED_NON_GREEK_HEADWEAR_TERMS = (
+    "baseball cap",
+    "bonnet",
+    "cap",
+    "head scarf",
+    "head wrap",
+    "headscarf",
+    "headwrap",
+    "hat",
+    "turban",
+    "veil",
+)
+
+GENERIC_HEADWEAR_OR_ORNAMENT_TERMS = (
+    "accessory",
+    "head covering",
+    "headpiece",
+    "headwear",
+    "ornament",
+)
+
+EMPTY_ORNAMENT_TERMS = (
+    "none",
+    "no headpiece",
+    "no headwear",
+    "no ornament",
+    "no ornaments",
+)
+
+ALLOWED_CLASSICAL_ORNAMENT_TERMS = (
+    "ancient",
+    "classical",
+    "greek",
+    "laurel",
+)
+
+NATURAL_COLOR_WORDS = (
+    "black",
+    "blond",
+    "blonde",
+    "blue",
+    "brown",
+    "copper",
+    "dark",
+    "gold",
+    "golden",
+    "gray",
+    "green",
+    "grey",
+    "light",
+    "orange",
+    "red",
+    "reddish",
+    "white",
+    "yellow",
+)
+
+FORBIDDEN_TARGET_STYLE_TERMS = (
+    "background",
+    "dark ember",
+    "glossy",
+    "gray",
+    "grey",
+    "lava",
+    "lighting",
+    "low-albedo",
+    "museum",
+    "patina",
+    "pitted",
+    "polished",
+    "shine",
+    "specular",
+    "surface",
+    "weather",
+    "weathered",
+    "weathering",
+    "white marble",
+)
+
 FIXED_PROMPT_CONSTRAINTS = (
     "Use the reference portrait as the only identity, pose, face-structure, "
-    "hair silhouette, headwear silhouette, and broad-expression source. "
+    "hair silhouette, explicitly Greek or classical headwear or ornament "
+    "silhouette, and broad-expression source. "
+    "Use the reference portrait as the only source for identity-bearing face "
+    "structure, pose and head angle, age cues, gender presentation cues, hair "
+    "silhouette, facial hair shape, explicitly Greek or classical headwear or "
+    "ornament shape, and broad expression only when useful. Omit headwear or "
+    "accessories unless they are explicitly Greek or classical and can become "
+    "carved stone. Translate the person into a final marble bust rather than "
+    "describing selfie artifacts. Convert broad smiles or laughter into a "
+    "subtle carved smile or soft neutral expression, and omit hand gestures. "
     "The eyes must be blank sculpted stone eyes or closed carved eyelids; "
     "no pupils, no irises, no colored eyes, no catchlights, no painted eyes, "
-    "no realistic human eyes. Hair, eyebrows, facial hair, head coverings, "
-    "and ornaments must be carved from the same marble as the face. Use matte "
-    "weathered grey marble, rough pitted low-albedo stone, grey-brown mineral "
-    "patina, grime in recesses, chipped edges, and localized lava only in the "
-    "broken lower base. Avoid glossy marble, wet shine, specular hotspots, "
-    "selfie lighting, beauty lighting, modern accessories, duplicate figures, "
-    "side-by-side views, and collage."
+    "no realistic human eyes. Hair, eyebrows, facial hair, and any allowed "
+    "Greek or classical head covering or ornament must be carved from the same "
+    "marble as the face. Use matte weathered grey marble, rough pitted "
+    "low-albedo face surface, dry chalky unpolished stone, uneven grey-brown "
+    "mineral patina, grime in recesses, chipped edges, and localized lava only "
+    "in the broken lower base against a dark ember background. Use subdued "
+    "off-axis ambient lighting and "
+    "asymmetrical stone lighting with one side of the face slightly darker "
+    "than the other, shadowed eye sockets, and shallow carved shadows under "
+    "the brow ridge, nose, lower lip, and chin. Avoid glossy marble, glossy "
+    "polished marble, wet shine, specular hotspots, selfie lighting, beauty "
+    "lighting, full-face even illumination, frontal studio light, head-on key "
+    "light, perfect portrait lighting, smooth beauty-render face, polished "
+    "cheeks, shiny forehead, shiny nose, shiny lips, modern accessories, "
+    "modern clothing, duplicate figures, side-by-side views, and collage."
 )
 
 PLANNER_INSTRUCTIONS = (
     "You are planning a prompt for a selfie-to-Greek-marble-statue-bust pipeline. "
     "You will receive exactly one image: the selfie/reference portrait. Treat that "
-    "single image as the only source for identity, pose, face structure, hair or "
-    "headwear silhouette, and broad expression. Do not infer any identity, pose, "
-    "or style detail from any target image, prior result, generated example, "
-    "second image, or unstated visual source. Return only JSON matching the "
-    "provided schema. Do not include race or ethnicity descriptors. Use the "
-    "target_style fields only for Greek marble statue bust styling: stone texture, "
-    "blank sculpted eyes or closed carved eyelids, sculpted hair, bust-only "
-    "framing, weathering, and no modern accessories."
+    "single image as the only source for identity-bearing face structure, pose "
+    "and head angle, broad expression only if useful, hair silhouette, facial "
+    "hair shape, explicitly Greek or classical headwear shape, age cues, "
+    "gender presentation cues, and "
+    "distinctive non-modern ornaments only if they can become carved stone. "
+    "Translate the person into a final marble bust; do not describe the selfie. "
+    "A smile can become a subtle carved smile or soft neutral expression. "
+    "Suppress modern clothing, glasses, earbuds, watches, phones, jewelry that "
+    "reads modern, modern hair accessories, bows, ribbons, clips, bands, hats, "
+    "caps, headscarves, headwraps, turbans, veils, selfie lighting, camera "
+    "perspective artifacts, skin texture, makeup, colored lips or eyes, hand "
+    "gestures, peace signs, thumbs up, exaggerated facial expression, and "
+    "photographic background. Keep only explicitly Greek or classical ornaments, "
+    "such as a laurel wreath, when they can become carved stone. Do not "
+    "reinterpret bows, ribbons, clips, bands, caps, headscarves, headwraps, "
+    "turbans, or veils as classical ornaments. Do not include "
+    "race or ethnicity labels. Do not infer any identity, pose, or style detail "
+    "from any target image, prior result, generated example, second image, or "
+    "unstated visual source. Return only JSON matching the provided schema. Use "
+    "target_style only for bust framing, statue angle, classical drapery or "
+    "torso treatment, and non-modern carved ornament shape. Do not put marble "
+    "material, polish, lighting, background, lava, weathering, or surface finish "
+    "language in target_style; the pipeline supplies those final style rules."
 )
 
 _REFERENCE_IDENTITY_KEYS = (
@@ -81,10 +225,6 @@ _TARGET_STYLE_KEYS = (
     "statue_angle",
     "drapery_and_torso",
     "headpiece_or_ornament",
-    "stone_surface",
-    "weathering",
-    "base_and_lava",
-    "background",
 )
 _SAFETY_OVERRIDE_KEYS = (
     "identity_source_policy",
@@ -115,10 +255,6 @@ class TargetStyle:
     statue_angle: str
     drapery_and_torso: tuple[str, ...]
     headpiece_or_ornament: tuple[str, ...]
-    stone_surface: tuple[str, ...]
-    weathering: tuple[str, ...]
-    base_and_lava: tuple[str, ...]
-    background: str
 
 
 @dataclass(frozen=True)
@@ -167,10 +303,6 @@ def build_prompt_plan_schema() -> dict[str, Any]:
             "statue_angle": string_schema,
             "drapery_and_torso": string_list_schema,
             "headpiece_or_ornament": string_list_schema,
-            "stone_surface": string_list_schema,
-            "weathering": string_list_schema,
-            "base_and_lava": string_list_schema,
-            "background": string_schema,
         }
     )
     safety_overrides_schema = _object_schema(
@@ -230,11 +362,8 @@ def parse_prompt_plan(payload: Mapping[str, Any]) -> PromptPlan:
         statue_angle=_string_field(target_payload, "statue_angle"),
         drapery_and_torso=_string_list_field(target_payload, "drapery_and_torso"),
         headpiece_or_ornament=_string_list_field(target_payload, "headpiece_or_ornament"),
-        stone_surface=_string_list_field(target_payload, "stone_surface"),
-        weathering=_string_list_field(target_payload, "weathering"),
-        base_and_lava=_string_list_field(target_payload, "base_and_lava"),
-        background=_string_field(target_payload, "background"),
     )
+    _validate_target_style(target_style)
     safety_overrides = SafetyOverrides(
         identity_source_policy=_string_field(safety_payload, "identity_source_policy"),
         eye_policy=_string_field(safety_payload, "eye_policy"),
@@ -259,26 +388,24 @@ def render_marble_prompt(plan: PromptPlan) -> str:
     reference_parts = [
         f"{reference.age_band} age band",
         f"{reference.gender_presentation} gender presentation",
-        reference.head_pose,
-        _join_phrases(reference.face_structure),
-        _join_phrases(reference.hair_or_headwear),
-        reference.broad_expression,
+        _sanitize_reference_phrase(reference.head_pose),
+        _join_phrases(_sanitize_reference_phrase(phrase) for phrase in reference.face_structure),
+        _join_phrases(
+            _sanitize_reference_phrase(phrase, strip_color_words=True)
+            for phrase in reference.hair_or_headwear
+        ),
+        _translate_expression_phrase(reference.broad_expression),
     ]
     target_parts = [
         target.bust_framing,
         target.statue_angle,
         _join_phrases(target.drapery_and_torso),
-        _join_phrases(target.headpiece_or_ornament),
-        _join_phrases(target.stone_surface),
-        _join_phrases(target.weathering),
-        _join_phrases(target.base_and_lava),
-        target.background,
+        _join_phrases(_sanitize_ornament_phrase(phrase) for phrase in target.headpiece_or_ornament),
     ]
     safety_parts = [
         safety.identity_source_policy,
         safety.eye_policy,
         safety.material_policy,
-        f"avoid {_join_phrases(safety.banned_details)}" if safety.banned_details else "",
     ]
 
     return (
@@ -420,6 +547,22 @@ def _validate_reference_identity(reference_identity: ReferenceIdentity) -> None:
             )
 
 
+def _validate_target_style(target_style: TargetStyle) -> None:
+    descriptors = (
+        target_style.bust_framing,
+        target_style.statue_angle,
+        *target_style.drapery_and_torso,
+        *target_style.headpiece_or_ornament,
+    )
+    for descriptor in descriptors:
+        matched_term = _find_forbidden_target_style_term(descriptor)
+        if matched_term is not None:
+            raise PromptPlanError(
+                "target_style must not include material, lighting, background, "
+                f"weathering, lava, or finish language (matched {matched_term!r})"
+            )
+
+
 def _find_forbidden_identity_label(descriptor: str) -> str | None:
     for label in sorted(FORBIDDEN_IDENTITY_LABELS, key=len, reverse=True):
         pattern = _identity_label_pattern(label)
@@ -428,12 +571,110 @@ def _find_forbidden_identity_label(descriptor: str) -> str | None:
     return None
 
 
+def _find_forbidden_target_style_term(descriptor: str) -> str | None:
+    for term in sorted(FORBIDDEN_TARGET_STYLE_TERMS, key=len, reverse=True):
+        pattern = _identity_label_pattern(term)
+        if pattern.search(descriptor):
+            return term
+    return None
+
+
 def _identity_label_pattern(label: str) -> re.Pattern[str]:
     escaped_label = re.escape(label).replace(r"\ ", r"\s+")
     return re.compile(rf"(?<![a-z0-9]){escaped_label}(?![a-z0-9])", re.IGNORECASE)
 
 
-def _join_phrases(phrases: tuple[str, ...] | list[str]) -> str:
+def _translate_expression_phrase(phrase: str) -> str:
+    lowered = phrase.lower()
+    if any(marker in lowered for marker in ("smile", "laugh", "grin")):
+        return "subtle carved smile"
+    if any(
+        marker in lowered for marker in ("open-mouthed", "visible teeth", "pout", "exaggerated")
+    ):
+        return "soft neutral expression"
+    return _sanitize_reference_phrase(phrase)
+
+
+def _sanitize_reference_phrase(phrase: str, *, strip_color_words: bool = False) -> str:
+    sanitized = phrase.strip()
+    lowered = sanitized.lower()
+    if any(term in lowered for term in SUPPRESSED_SELFIE_ARTIFACT_TERMS):
+        return ""
+    if strip_color_words and _contains_suppressed_non_greek_headwear(sanitized):
+        return ""
+    if strip_color_words and _contains_generic_non_classical_headwear_or_ornament(sanitized):
+        return ""
+
+    sanitized = re.sub(r"\bfacing\s+(?:the\s+)?camera\b", "facing forward", sanitized, flags=re.I)
+    sanitized = re.sub(
+        r"\bgaze\s+directed\s+at\s+(?:the\s+)?camera\b",
+        "direct forward gaze",
+        sanitized,
+        flags=re.I,
+    )
+    if strip_color_words:
+        sanitized = _strip_color_words(sanitized)
+    return _normalize_phrase_whitespace(sanitized)
+
+
+def _sanitize_ornament_phrase(phrase: str) -> str:
+    lowered = phrase.lower()
+    if _is_empty_ornament_phrase(phrase):
+        return ""
+    if any(term in lowered for term in SUPPRESSED_SELFIE_ARTIFACT_TERMS):
+        return ""
+    if _contains_suppressed_non_greek_headwear(phrase):
+        return ""
+    if _has_allowed_classical_ornament_term(phrase):
+        return _normalize_phrase_whitespace(phrase)
+    return ""
+
+
+def _contains_suppressed_non_greek_headwear(phrase: str) -> bool:
+    for term in sorted(SUPPRESSED_NON_GREEK_HEADWEAR_TERMS, key=len, reverse=True):
+        if _identity_label_pattern(term).search(phrase):
+            return True
+    return False
+
+
+def _contains_generic_non_classical_headwear_or_ornament(phrase: str) -> bool:
+    if _has_allowed_classical_ornament_term(phrase):
+        return False
+    for term in sorted(GENERIC_HEADWEAR_OR_ORNAMENT_TERMS, key=len, reverse=True):
+        if _identity_label_pattern(term).search(phrase):
+            return True
+    return False
+
+
+def _has_allowed_classical_ornament_term(phrase: str) -> bool:
+    return any(
+        _identity_label_pattern(term).search(phrase) for term in ALLOWED_CLASSICAL_ORNAMENT_TERMS
+    )
+
+
+def _is_empty_ornament_phrase(phrase: str) -> bool:
+    normalized = _normalize_phrase_whitespace(phrase).lower()
+    return normalized in EMPTY_ORNAMENT_TERMS
+
+
+def _strip_color_words(phrase: str) -> str:
+    color_pattern = "|".join(re.escape(word) for word in NATURAL_COLOR_WORDS)
+    phrase = re.sub(rf"\b(?:{color_pattern})\b", "", phrase, flags=re.I)
+    phrase = re.sub(r"\bwith\s+(?:lighter\s+)?tones\b", "", phrase, flags=re.I)
+    phrase = re.sub(r"\btones\b", "", phrase, flags=re.I)
+    return phrase
+
+
+def _normalize_phrase_whitespace(phrase: str) -> str:
+    phrase = re.sub(r"\s+", " ", phrase)
+    phrase = re.sub(r"\s+([,;:.])", r"\1", phrase)
+    phrase = re.sub(r"\(\s+", "(", phrase)
+    phrase = re.sub(r"\s+\)", ")", phrase)
+    phrase = re.sub(r"\s*/\s*", "/", phrase)
+    return phrase.strip(" ,;")
+
+
+def _join_phrases(phrases: Iterable[str]) -> str:
     return ", ".join(phrase for phrase in phrases if phrase)
 
 

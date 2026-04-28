@@ -24,6 +24,9 @@ DEFAULT_NEGATIVE_PROMPT = (
     "overexposed white face, clean bright cheeks, shiny forehead, shiny nose, shiny lips, "
     "red or orange light on face, red or orange light on hair, glowing skin, glowing hair, "
     "soft hair strands, realistic hair texture, modern eyewear, modern accessories, "
+    "fabric bow, hair bow, ribbon, hair ribbon, hair clip, hair band, colorful hair "
+    "accessory, fabric cap, baseball cap, headscarf, head wrap, headwrap, turban, "
+    "bonnet, veil, "
     "duplicate figures, side-by-side views, collage"
 )
 

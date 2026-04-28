@@ -21,10 +21,6 @@ VALID_PLAN = {
         "statue_angle": "matching the reference head angle",
         "drapery_and_torso": ["simple classical drapery", "visible shoulders"],
         "headpiece_or_ornament": [],
-        "stone_surface": ["matte weathered grey marble", "rough pitted low-albedo stone"],
-        "weathering": ["grey-brown mineral patina", "grime in recesses"],
-        "base_and_lava": ["broken lower bust base with localized lava only in cracks"],
-        "background": "dark ember background",
     },
     "safety_overrides": {
         "identity_source_policy": "use only the reference portrait for identity",

@@ -141,10 +141,6 @@ def _prompt_plan_to_payload(prompt_plan) -> dict[str, object]:
             "statue_angle": target.statue_angle,
             "drapery_and_torso": list(target.drapery_and_torso),
             "headpiece_or_ornament": list(target.headpiece_or_ornament),
-            "stone_surface": list(target.stone_surface),
-            "weathering": list(target.weathering),
-            "base_and_lava": list(target.base_and_lava),
-            "background": target.background,
         },
         "safety_overrides": {
             "identity_source_policy": safety.identity_source_policy,

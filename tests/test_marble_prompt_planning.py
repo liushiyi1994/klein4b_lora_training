@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 
 from klein4b.marble_prompt_planning import (
+    PLANNER_INSTRUCTIONS,
     PromptPlanError,
     build_prompt_plan_schema,
     parse_prompt_plan,
@@ -27,10 +28,6 @@ VALID_PLAN = {
         "statue_angle": "matching the reference head angle",
         "drapery_and_torso": ["simple classical drapery", "visible shoulders"],
         "headpiece_or_ornament": [],
-        "stone_surface": ["matte weathered grey marble", "rough pitted low-albedo stone"],
-        "weathering": ["grey-brown mineral patina", "grime in recesses"],
-        "base_and_lava": ["broken lower bust base with localized lava only in cracks"],
-        "background": "dark ember background",
     },
     "safety_overrides": {
         "identity_source_policy": "use only the reference portrait for identity",
@@ -52,6 +49,46 @@ def test_prompt_plan_schema_requires_selfie_only_sections() -> None:
         "safety_overrides",
     }
     assert "pseudo_target" not in str(schema)
+
+
+def test_prompt_plan_schema_keeps_target_style_composition_only() -> None:
+    schema = build_prompt_plan_schema()
+
+    target_style_schema = schema["schema"]["properties"]["target_style"]
+
+    assert set(target_style_schema["properties"]) == {
+        "bust_framing",
+        "statue_angle",
+        "drapery_and_torso",
+        "headpiece_or_ornament",
+    }
+    assert "stone_surface" not in str(target_style_schema)
+    assert "weathering" not in str(target_style_schema)
+    assert "base_and_lava" not in str(target_style_schema)
+    assert "background" not in str(target_style_schema)
+
+
+def test_planner_instructions_translate_selfie_cues_without_artifacts() -> None:
+    instructions = PLANNER_INSTRUCTIONS.lower()
+
+    assert "translate the person into a final marble bust" in instructions
+    assert "do not describe the selfie" in instructions
+    assert "identity-bearing face structure" in instructions
+    assert "hair silhouette" in instructions
+    assert "facial hair" in instructions
+    assert "headwear shape" in instructions
+    assert "modern clothing" in instructions
+    assert "glasses" in instructions
+    assert "hair accessories" in instructions
+    assert "bows" in instructions
+    assert "ribbons" in instructions
+    assert "headscarves" in instructions
+    assert "turbans" in instructions
+    assert "do not reinterpret bows" in instructions
+    assert "do not reinterpret" in instructions
+    assert "only explicitly greek or classical ornaments" in instructions
+    assert "hand gestures" in instructions
+    assert "race or ethnicity labels" in instructions
 
 
 def test_parse_prompt_plan_rejects_race_or_ethnicity_descriptors() -> None:
@@ -105,12 +142,166 @@ def test_render_marble_prompt_is_final_image_prompt_with_fixed_constraints() -> 
     assert "centered chest-up Greek marble statue bust" in prompt
     assert "reference portrait as the only identity" in prompt
     assert "blank sculpted stone eyes or closed carved eyelids" in prompt
+    assert "dry chalky unpolished stone" in prompt
+    assert "subdued off-axis ambient lighting" in prompt
+    assert "asymmetrical stone lighting" in prompt
+    assert "dark ember background" in prompt
+    assert "localized lava only in the broken lower base" in prompt
+    assert "Omit headwear or accessories unless they are explicitly Greek or classical" in prompt
     assert "no pupils" in prompt
     assert "no irises" in prompt
     assert "no catchlights" in prompt
     assert "same marble as the face" in prompt
-    assert "localized lava only in the broken lower base" in prompt
     assert "pseudo target" not in prompt.lower()
+
+
+def test_render_marble_prompt_excludes_planner_authored_material_style() -> None:
+    payload = {
+        **VALID_PLAN,
+        "target_style": {
+            **VALID_PLAN["target_style"],
+            "stone_surface": ["white marble", "subtle polished highlights"],
+            "weathering": ["light surface wear"],
+            "base_and_lava": ["no lava or flame elements"],
+            "background": "plain neutral museum-like backdrop",
+        },
+    }
+
+    with pytest.raises(PromptPlanError, match="unexpected fields"):
+        parse_prompt_plan(payload)
+
+
+def test_parse_prompt_plan_rejects_material_language_inside_target_style() -> None:
+    payload = {
+        **VALID_PLAN,
+        "target_style": {
+            **VALID_PLAN["target_style"],
+            "drapery_and_torso": ["simple classical drapery", "subtle polished highlights"],
+        },
+    }
+
+    with pytest.raises(PromptPlanError, match="target_style must not include material"):
+        parse_prompt_plan(payload)
+
+
+def test_render_marble_prompt_suppresses_selfie_artifact_details() -> None:
+    payload = {
+        **VALID_PLAN,
+        "reference_identity": {
+            **VALID_PLAN["reference_identity"],
+            "face_structure": [
+                "large eyes with heavy eyeliner in the reference",
+                "rounded cheeks",
+                "slightly prominent upper teeth",
+                "fair complexion",
+            ],
+            "hair_or_headwear": [
+                "short wavy dark hair",
+                "yellow headband or hair accessory",
+                "dark eyeglass frames",
+                "large bow-like headwear silhouette",
+            ],
+            "broad_expression": "open-mouthed laugh with visible upper teeth",
+        },
+    }
+    plan = parse_prompt_plan(payload)
+
+    prompt = render_marble_prompt(plan)
+
+    assert "rounded cheeks" in prompt
+    assert "short wavy hair" in prompt
+    assert "subtle carved smile" in prompt
+    assert "eyeliner" not in prompt
+    assert "upper teeth" not in prompt
+    assert "complexion" not in prompt
+    assert "yellow" not in prompt
+    assert "headband" not in prompt
+    assert "bow" not in prompt
+    assert "eyeglass" not in prompt
+    assert "open-mouthed" not in prompt
+    assert "visible upper teeth" not in prompt
+
+
+def test_render_marble_prompt_keeps_greek_style_ornaments_only() -> None:
+    payload = {
+        **VALID_PLAN,
+        "target_style": {
+            **VALID_PLAN["target_style"],
+            "headpiece_or_ornament": [
+                "classical Greek laurel wreath carved as stone relief",
+                "modern bow-shaped ribbon ornament",
+                "carved bow-like hair ornament retained in simplified classical form",
+            ],
+        },
+    }
+    plan = parse_prompt_plan(payload)
+
+    prompt = render_marble_prompt(plan)
+
+    assert "classical Greek laurel wreath carved as stone relief" in prompt
+    assert "modern bow-shaped ribbon ornament" not in prompt
+    assert "carved bow-like hair ornament" not in prompt
+
+
+def test_render_marble_prompt_suppresses_non_greek_headwear() -> None:
+    payload = {
+        **VALID_PLAN,
+        "reference_identity": {
+            **VALID_PLAN["reference_identity"],
+            "hair_or_headwear": [
+                "closely cropped short hair",
+                "patterned cap with rounded crown",
+                "geometric patterned headwear",
+                "wrapped headscarf with a turban-like silhouette",
+            ],
+        },
+        "target_style": {
+            **VALID_PLAN["target_style"],
+            "headpiece_or_ornament": [
+                "classical Greek laurel wreath carved as stone relief",
+                "carved patterned cap simplified into a classical head covering shape",
+                "carved wrapped head covering translated into a sculptural turban-like form",
+                "simple carved geometric headpiece inspired by the reference silhouette",
+                "none",
+            ],
+        },
+    }
+    plan = parse_prompt_plan(payload)
+
+    prompt = render_marble_prompt(plan)
+
+    assert "closely cropped short hair" in prompt
+    assert "classical Greek laurel wreath carved as stone relief" in prompt
+    assert "patterned cap" not in prompt
+    assert "geometric patterned headwear" not in prompt
+    assert "headscarf" not in prompt
+    assert "turban" not in prompt
+    assert "classical head covering shape" not in prompt
+    assert "sculptural turban-like form" not in prompt
+    assert "geometric headpiece" not in prompt
+    assert "none" not in prompt
+
+
+def test_render_marble_prompt_does_not_render_banned_detail_terms() -> None:
+    payload = {
+        **VALID_PLAN,
+        "safety_overrides": {
+            **VALID_PLAN["safety_overrides"],
+            "banned_details": [
+                "bows that read fabric-like or colorful",
+                "ribbons",
+                "modern glasses",
+            ],
+        },
+    }
+    plan = parse_prompt_plan(payload)
+
+    prompt = render_marble_prompt(plan)
+
+    assert "bows that read fabric-like or colorful" not in prompt
+    assert "ribbons" not in prompt
+    assert "modern glasses" not in prompt
+    assert "no pupils" in prompt
 
 
 def _input_image_items(payload: object) -> list[dict[str, Any]]:
