@@ -294,8 +294,8 @@ def image_path_to_data_url(reference_path: Path) -> str:
     """Encode an image path as a data URL for the OpenAI Responses API."""
 
     media_type, _encoding = mimetypes.guess_type(reference_path)
-    if media_type is None:
-        media_type = "application/octet-stream"
+    if media_type is None or not media_type.startswith("image/"):
+        raise PromptPlanError(f"Unsupported image MIME type for {reference_path}")
     encoded_image = base64.b64encode(reference_path.read_bytes()).decode("ascii")
     return f"data:{media_type};base64,{encoded_image}"
 
@@ -326,7 +326,11 @@ def plan_prompt_with_openai(
         ],
         text={"format": {"type": "json_schema", **build_prompt_plan_schema()}},
     )
-    return parse_prompt_plan(json.loads(response.output_text))
+    try:
+        payload = json.loads(response.output_text)
+    except json.JSONDecodeError as error:
+        raise PromptPlanError("OpenAI planner returned invalid JSON") from error
+    return parse_prompt_plan(payload)
 
 
 def _object_schema(properties: Mapping[str, dict[str, Any]]) -> dict[str, Any]:

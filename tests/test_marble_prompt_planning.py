@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -111,6 +113,20 @@ def test_render_marble_prompt_is_final_image_prompt_with_fixed_constraints() -> 
     assert "pseudo target" not in prompt.lower()
 
 
+def _input_image_items(payload: object) -> list[dict[str, Any]]:
+    if isinstance(payload, dict):
+        current = [payload] if payload.get("type") == "input_image" else []
+        for value in payload.values():
+            current.extend(_input_image_items(value))
+        return current
+    if isinstance(payload, list):
+        image_items: list[dict[str, Any]] = []
+        for item in payload:
+            image_items.extend(_input_image_items(item))
+        return image_items
+    return []
+
+
 def test_openai_planner_sends_exactly_one_image_input(tmp_path: Path) -> None:
     from klein4b.marble_prompt_planning import plan_prompt_with_openai
 
@@ -123,7 +139,7 @@ def test_openai_planner_sends_exactly_one_image_input(tmp_path: Path) -> None:
             calls["kwargs"] = kwargs
 
             class Response:
-                output_text = __import__("json").dumps(VALID_PLAN)
+                output_text = json.dumps(VALID_PLAN)
 
             return Response()
 
@@ -140,9 +156,43 @@ def test_openai_planner_sends_exactly_one_image_input(tmp_path: Path) -> None:
     assert kwargs["model"] == "gpt-5.4-mini"
     assert kwargs["text"]["format"]["type"] == "json_schema"
     assert kwargs["text"]["format"]["strict"] is True
-    content = kwargs["input"][0]["content"]
-    image_items = [item for item in content if item["type"] == "input_image"]
+    assert len(kwargs["input"]) == 1
+    image_items = _input_image_items(kwargs["input"])
     assert len(image_items) == 1
     assert image_items[0]["image_url"].startswith("data:image/jpeg;base64,")
     assert "pseudo" not in str(kwargs).lower()
     assert plan.reference_identity.age_band == "child"
+
+
+@pytest.mark.parametrize("file_name", ["selfie", "selfie.txt"])
+def test_image_path_to_data_url_rejects_non_image_mime_type(
+    tmp_path: Path,
+    file_name: str,
+) -> None:
+    from klein4b.marble_prompt_planning import image_path_to_data_url
+
+    reference = tmp_path / file_name
+    reference.write_bytes(b"fake-image")
+
+    with pytest.raises(PromptPlanError, match="Unsupported image MIME type"):
+        image_path_to_data_url(reference)
+
+
+def test_openai_planner_wraps_invalid_json_response(tmp_path: Path) -> None:
+    from klein4b.marble_prompt_planning import plan_prompt_with_openai
+
+    reference = tmp_path / "selfie.jpg"
+    reference.write_bytes(b"fake-image")
+
+    class FakeResponses:
+        def create(self, **_kwargs: object) -> object:
+            class Response:
+                output_text = "{not json"
+
+            return Response()
+
+    class FakeClient:
+        responses = FakeResponses()
+
+    with pytest.raises(PromptPlanError, match="OpenAI planner returned invalid JSON"):
+        plan_prompt_with_openai(reference_path=reference, client=FakeClient())
