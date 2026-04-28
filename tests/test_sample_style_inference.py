@@ -43,6 +43,11 @@ def test_render_sample_style_config_uses_best_klein_settings(tmp_path: Path) -> 
     assert sample["samples"][0]["prompt"].startswith("Change image 1 into a <mrblbust>")
     assert "head-only crop" in sample["neg"]
     assert "individual hair strands" in sample["neg"]
+    assert "pupils" in sample["neg"]
+    assert "irises" in sample["neg"]
+    assert "painted eyes" in sample["neg"]
+    assert "modern design" in sample["neg"]
+    assert "contemporary decorative details" in sample["neg"]
     assert "hair bow" in sample["neg"]
     assert "ribbon" in sample["neg"]
     assert "hair clip" in sample["neg"]

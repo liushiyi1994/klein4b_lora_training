@@ -78,7 +78,8 @@ def test_planner_instructions_translate_selfie_cues_without_artifacts() -> None:
     assert "hair silhouette" in instructions
     assert "hairstyle" in instructions
     assert "facial hair" in instructions
-    assert "headwear shape" in instructions
+    assert "do not invent greek ornaments" in instructions
+    assert "laurel wreaths" in instructions
     assert "modern clothing" in instructions
     assert "glasses" in instructions
     assert "hair accessories" in instructions
@@ -145,6 +146,7 @@ def test_render_marble_prompt_is_final_image_prompt_with_fixed_constraints() -> 
     assert "centered chest-up Greek marble statue bust" in prompt
     assert "reference portrait as the only identity" in prompt
     assert "preserve the selfie head direction and head angle" in prompt
+    assert "preserve reference yaw, pitch, roll, gaze direction, and neck orientation" in prompt
     assert "preserve the selfie hairstyle" in prompt
     assert "blank sculpted stone eyes or closed carved eyelids" in prompt
     assert "dry chalky unpolished stone" in prompt
@@ -152,7 +154,9 @@ def test_render_marble_prompt_is_final_image_prompt_with_fixed_constraints() -> 
     assert "asymmetrical stone lighting" in prompt
     assert "dark ember background" in prompt
     assert "localized lava only in the broken lower base" in prompt
-    assert "Omit headwear or accessories unless they are explicitly Greek" in prompt
+    assert "Preserve hair only; do not add a crown" in prompt
+    assert "explicitly Greek headwear or ornament silhouette" not in prompt
+    assert "Greek head covering or ornament" not in prompt
     assert "Greek or classical headwear" not in prompt
     assert "Greek or classical head covering" not in prompt
     assert "no pupils" in prompt
@@ -160,6 +164,28 @@ def test_render_marble_prompt_is_final_image_prompt_with_fixed_constraints() -> 
     assert "no catchlights" in prompt
     assert "same marble as the face" in prompt
     assert "pseudo target" not in prompt.lower()
+
+
+def test_render_marble_prompt_uses_conditional_ornament_policy() -> None:
+    no_ornament_prompt = render_marble_prompt(parse_prompt_plan(VALID_PLAN))
+    with_ornament_plan = parse_prompt_plan(
+        {
+            **VALID_PLAN,
+            "target_style": {
+                **VALID_PLAN["target_style"],
+                "headpiece_or_ornament": ["classical Greek laurel wreath carved as stone relief"],
+            },
+        }
+    )
+
+    with_ornament_prompt = render_marble_prompt(with_ornament_plan)
+
+    assert "Preserve hair only; do not add a crown" in no_ornament_prompt
+    assert "Allowed ornament" not in no_ornament_prompt
+    assert "Allowed ornament: classical Greek laurel wreath carved as stone relief" in (
+        with_ornament_prompt
+    )
+    assert "Preserve hair only; do not add a crown" not in with_ornament_prompt
 
 
 def test_render_marble_prompt_excludes_planner_authored_material_style() -> None:
@@ -224,10 +250,10 @@ def test_render_marble_prompt_suppresses_selfie_artifact_details() -> None:
     assert "upper teeth" not in prompt
     assert "complexion" not in prompt
     assert "yellow" not in prompt
-    assert "headband" not in prompt
+    assert "yellow headband" not in prompt
     assert "bow" not in prompt
-    assert "circlet" not in prompt
-    assert "tiara" not in prompt
+    assert "decorative circlet" not in prompt
+    assert "small tiara" not in prompt
     assert "eyeglass" not in prompt
     assert "open-mouthed" not in prompt
     assert "visible upper teeth" not in prompt

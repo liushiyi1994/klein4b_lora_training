@@ -155,25 +155,26 @@ FORBIDDEN_TARGET_STYLE_TERMS = (
 
 FIXED_PROMPT_CONSTRAINTS = (
     "Use the reference portrait as the only identity, pose, face-structure, "
-    "hair silhouette, explicitly Greek headwear or ornament "
-    "silhouette, and broad-expression source. "
+    "hair silhouette, facial hair shape, and broad-expression source. "
     "Use the reference portrait as the only source for identity-bearing face "
     "structure, pose and head angle, age cues, gender presentation cues, hair "
-    "silhouette, facial hair shape, explicitly Greek headwear or ornament "
-    "shape, and broad expression only when useful. Omit headwear or "
-    "accessories unless they are explicitly Greek and can become "
-    "carved stone. Always preserve the selfie head direction and head angle; do not "
-    "normalize the bust to a frontal view unless the selfie is frontal. "
+    "silhouette, facial hair shape, and broad expression only when useful. "
+    "Always preserve the selfie head direction and head angle; preserve "
+    "reference yaw, pitch, roll, gaze direction, and neck orientation; do not "
+    "normalize the bust to a frontal view or generic three-quarter view unless "
+    "the selfie has that orientation. "
     "Always preserve the selfie hairstyle as carved marble, including length, part, "
     "bangs, volume, curl or straightness, updo, hairline, and overall hair "
-    "mass. Translate the person into a final marble bust rather than "
-    "describing selfie artifacts. Convert broad smiles or laughter into a "
-    "subtle carved smile or soft neutral expression, and omit hand gestures. "
+    "mass; translate hair into carved stone hair, not decorative headwear. "
+    "Translate the person into a final marble bust rather than describing "
+    "selfie artifacts. Convert broad smiles or laughter into a subtle carved "
+    "smile or soft neutral expression, and omit hand gestures. "
     "The eyes must be blank sculpted stone eyes or closed carved eyelids; "
     "no pupils, no irises, no colored eyes, no catchlights, no painted eyes, "
     "no realistic human eyes. Hair, eyebrows, facial hair, and any allowed "
-    "Greek head covering or ornament must be carved from the same "
-    "marble as the face. Use matte weathered grey marble, rough pitted "
+    "ornament must be carved from the same marble as the face. Avoid modern "
+    "design, modern decorative details, contemporary ornamentation, modern "
+    "accessories, and modern clothing. Use matte weathered grey marble, rough pitted "
     "low-albedo face surface, dry chalky unpolished stone, uneven grey-brown "
     "mineral patina, grime in recesses, chipped edges, and localized lava only "
     "in the broken lower base against a dark ember background. Use subdued "
@@ -184,8 +185,14 @@ FIXED_PROMPT_CONSTRAINTS = (
     "polished marble, wet shine, specular hotspots, selfie lighting, beauty "
     "lighting, full-face even illumination, frontal studio light, head-on key "
     "light, perfect portrait lighting, smooth beauty-render face, polished "
-    "cheeks, shiny forehead, shiny nose, shiny lips, modern accessories, "
+    "cheeks, shiny forehead, shiny nose, shiny lips, modern design, modern "
+    "decorative details, contemporary ornamentation, modern accessories, "
     "modern clothing, duplicate figures, side-by-side views, and collage."
+)
+
+NO_ORNAMENT_POLICY = (
+    "Preserve hair only; do not add a crown, laurel wreath, tiara, circlet, "
+    "headband, headdress, veil, cap, hat, head covering, or hair accessory."
 )
 
 PLANNER_INSTRUCTIONS = (
@@ -193,12 +200,13 @@ PLANNER_INSTRUCTIONS = (
     "You will receive exactly one image: the selfie/reference portrait. Treat that "
     "single image as the only source for identity-bearing face structure, pose "
     "and head angle, head direction, broad expression only if useful, hair "
-    "silhouette, hairstyle, facial hair shape, explicitly Greek "
-    "headwear shape, age cues, "
+    "silhouette, hairstyle, facial hair shape, age cues, "
     "gender presentation cues, and "
     "distinctive non-modern ornaments only if they can become carved stone. "
-    "Preserve the selfie head direction and head angle; do not normalize the "
-    "person to a frontal bust unless the selfie is frontal. Preserve the "
+    "Preserve the selfie head direction and head angle, including yaw, pitch, "
+    "roll, gaze direction, and neck orientation; do not normalize the person "
+    "to a frontal or generic three-quarter bust unless the selfie has that "
+    "orientation. Preserve the "
     "selfie hairstyle as carved marble, including length, part, bangs, volume, "
     "curl or straightness, updo, hairline, and overall hair mass. "
     "Translate the person into a final marble bust; do not describe the selfie. "
@@ -207,9 +215,12 @@ PLANNER_INSTRUCTIONS = (
     "reads modern, modern hair accessories, bows, ribbons, clips, bands, hats, "
     "caps, headscarves, headwraps, turbans, veils, selfie lighting, camera "
     "perspective artifacts, skin texture, makeup, colored lips or eyes, hand "
-    "gestures, peace signs, thumbs up, exaggerated facial expression, and "
-    "photographic background. Keep only explicitly Greek ornaments, "
-    "such as a laurel wreath, when they can become carved stone. Do not "
+    "gestures, peace signs, thumbs up, exaggerated facial expression, modern "
+    "design details, contemporary ornamentation, and photographic background. "
+    "Do not invent Greek ornaments, laurel wreaths, crowns, headpieces, or "
+    "head coverings. Keep only explicitly Greek ornaments, such as a laurel "
+    "wreath, when they are clearly visible in the reference and can become "
+    "carved stone. Do not "
     "reinterpret bows, ribbons, clips, bands, caps, headscarves, headwraps, "
     "turbans, or veils as classical ornaments. Do not include "
     "race or ethnicity labels. Do not infer any identity, pose, or style detail "
@@ -405,11 +416,14 @@ def render_marble_prompt(plan: PromptPlan) -> str:
         ),
         _translate_expression_phrase(reference.broad_expression),
     ]
+    ornament_text = _join_phrases(
+        _sanitize_ornament_phrase(phrase) for phrase in target.headpiece_or_ornament
+    )
     target_parts = [
         target.bust_framing,
         target.statue_angle,
         _join_phrases(target.drapery_and_torso),
-        _join_phrases(_sanitize_ornament_phrase(phrase) for phrase in target.headpiece_or_ornament),
+        ornament_text,
     ]
     safety_parts = [
         safety.identity_source_policy,
@@ -422,8 +436,19 @@ def render_marble_prompt(plan: PromptPlan) -> str:
         f"preserving {_join_phrases(reference_parts)}. "
         f"Target style: {_join_phrases(target_parts)}. "
         f"Planner safety overrides: {_join_phrases(safety_parts)}. "
+        f"{_render_ornament_policy(ornament_text)} "
         f"{FIXED_PROMPT_CONSTRAINTS}"
     )
+
+
+def _render_ornament_policy(ornament_text: str) -> str:
+    if ornament_text:
+        return (
+            f"Allowed ornament: {ornament_text}. Do not add any other crown, "
+            "headpiece, head covering, hair accessory, modern design detail, "
+            "or contemporary ornament."
+        )
+    return NO_ORNAMENT_POLICY
 
 
 def image_path_to_data_url(reference_path: Path) -> str:
