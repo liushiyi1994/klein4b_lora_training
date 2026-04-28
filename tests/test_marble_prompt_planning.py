@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from klein4b.marble_prompt_planning import (
@@ -107,3 +109,40 @@ def test_render_marble_prompt_is_final_image_prompt_with_fixed_constraints() -> 
     assert "same marble as the face" in prompt
     assert "localized lava only in the broken lower base" in prompt
     assert "pseudo target" not in prompt.lower()
+
+
+def test_openai_planner_sends_exactly_one_image_input(tmp_path: Path) -> None:
+    from klein4b.marble_prompt_planning import plan_prompt_with_openai
+
+    calls: dict[str, object] = {}
+    reference = tmp_path / "selfie.jpg"
+    reference.write_bytes(b"fake-image")
+
+    class FakeResponses:
+        def create(self, **kwargs: object) -> object:
+            calls["kwargs"] = kwargs
+
+            class Response:
+                output_text = __import__("json").dumps(VALID_PLAN)
+
+            return Response()
+
+    class FakeClient:
+        responses = FakeResponses()
+
+    plan = plan_prompt_with_openai(
+        reference_path=reference,
+        model="gpt-5.4-mini",
+        client=FakeClient(),
+    )
+
+    kwargs = calls["kwargs"]
+    assert kwargs["model"] == "gpt-5.4-mini"
+    assert kwargs["text"]["format"]["type"] == "json_schema"
+    assert kwargs["text"]["format"]["strict"] is True
+    content = kwargs["input"][0]["content"]
+    image_items = [item for item in content if item["type"] == "input_image"]
+    assert len(image_items) == 1
+    assert image_items[0]["image_url"].startswith("data:image/jpeg;base64,")
+    assert "pseudo" not in str(kwargs).lower()
+    assert plan.reference_identity.age_band == "child"

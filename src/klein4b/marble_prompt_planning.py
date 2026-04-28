@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import base64
+import json
+import mimetypes
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 ALLOWED_AGE_BANDS = (
@@ -49,6 +53,19 @@ FIXED_PROMPT_CONSTRAINTS = (
     "broken lower base. Avoid glossy marble, wet shine, specular hotspots, "
     "selfie lighting, beauty lighting, modern accessories, duplicate figures, "
     "side-by-side views, and collage."
+)
+
+PLANNER_INSTRUCTIONS = (
+    "You are planning a prompt for a selfie-to-Greek-marble-statue-bust pipeline. "
+    "You will receive exactly one image: the selfie/reference portrait. Treat that "
+    "single image as the only source for identity, pose, face structure, hair or "
+    "headwear silhouette, and broad expression. Do not infer any identity, pose, "
+    "or style detail from any target image, prior result, generated example, "
+    "second image, or unstated visual source. Return only JSON matching the "
+    "provided schema. Do not include race or ethnicity descriptors. Use the "
+    "target_style fields only for Greek marble statue bust styling: stone texture, "
+    "blank sculpted eyes or closed carved eyelids, sculpted hair, bust-only "
+    "framing, weathering, and no modern accessories."
 )
 
 _REFERENCE_IDENTITY_KEYS = (
@@ -273,6 +290,45 @@ def render_marble_prompt(plan: PromptPlan) -> str:
     )
 
 
+def image_path_to_data_url(reference_path: Path) -> str:
+    """Encode an image path as a data URL for the OpenAI Responses API."""
+
+    media_type, _encoding = mimetypes.guess_type(reference_path)
+    if media_type is None:
+        media_type = "application/octet-stream"
+    encoded_image = base64.b64encode(reference_path.read_bytes()).decode("ascii")
+    return f"data:{media_type};base64,{encoded_image}"
+
+
+def plan_prompt_with_openai(
+    reference_path: Path,
+    model: str = "gpt-5.4-mini",
+    client: object | None = None,
+) -> PromptPlan:
+    """Request a strict prompt plan from OpenAI using only the reference selfie."""
+
+    if client is None:
+        from openai import OpenAI
+
+        client = OpenAI()
+
+    image_url = image_path_to_data_url(reference_path)
+    response = client.responses.create(
+        model=model,
+        input=[
+            {
+                "role": "user",
+                "content": [
+                    {"type": "input_text", "text": PLANNER_INSTRUCTIONS},
+                    {"type": "input_image", "image_url": image_url},
+                ],
+            }
+        ],
+        text={"format": {"type": "json_schema", **build_prompt_plan_schema()}},
+    )
+    return parse_prompt_plan(json.loads(response.output_text))
+
+
 def _object_schema(properties: Mapping[str, dict[str, Any]]) -> dict[str, Any]:
     return {
         "type": "object",
@@ -382,12 +438,15 @@ __all__ = [
     "ALLOWED_GENDER_PRESENTATIONS",
     "FIXED_PROMPT_CONSTRAINTS",
     "FORBIDDEN_IDENTITY_LABELS",
+    "PLANNER_INSTRUCTIONS",
     "PromptPlan",
     "PromptPlanError",
     "ReferenceIdentity",
     "SafetyOverrides",
     "TargetStyle",
     "build_prompt_plan_schema",
+    "image_path_to_data_url",
     "parse_prompt_plan",
+    "plan_prompt_with_openai",
     "render_marble_prompt",
 ]
