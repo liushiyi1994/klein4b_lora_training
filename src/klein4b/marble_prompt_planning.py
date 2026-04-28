@@ -5,6 +5,22 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
+ALLOWED_AGE_BANDS = (
+    "child",
+    "young adult",
+    "adult",
+    "middle-aged adult",
+    "elderly adult",
+    "unknown",
+)
+
+ALLOWED_GENDER_PRESENTATIONS = (
+    "masculine",
+    "feminine",
+    "androgynous",
+    "unknown",
+)
+
 FORBIDDEN_IDENTITY_LABELS = (
     "african",
     "asian",
@@ -116,18 +132,11 @@ def build_prompt_plan_schema() -> dict[str, Any]:
         {
             "age_band": {
                 "type": "string",
-                "enum": [
-                    "child",
-                    "young adult",
-                    "adult",
-                    "middle-aged adult",
-                    "elderly adult",
-                    "unknown",
-                ],
+                "enum": list(ALLOWED_AGE_BANDS),
             },
             "gender_presentation": {
                 "type": "string",
-                "enum": ["masculine", "feminine", "androgynous", "unknown"],
+                "enum": list(ALLOWED_GENDER_PRESENTATIONS),
             },
             "head_pose": string_schema,
             "face_structure": string_list_schema,
@@ -186,8 +195,12 @@ def parse_prompt_plan(payload: Mapping[str, Any]) -> PromptPlan:
     _require_exact_keys(safety_payload, _SAFETY_OVERRIDE_KEYS, "safety_overrides")
 
     reference_identity = ReferenceIdentity(
-        age_band=_string_field(reference_payload, "age_band"),
-        gender_presentation=_string_field(reference_payload, "gender_presentation"),
+        age_band=_enum_field(reference_payload, "age_band", ALLOWED_AGE_BANDS),
+        gender_presentation=_enum_field(
+            reference_payload,
+            "gender_presentation",
+            ALLOWED_GENDER_PRESENTATIONS,
+        ),
         head_pose=_string_field(reference_payload, "head_pose"),
         face_structure=_string_list_field(reference_payload, "face_structure"),
         hair_or_headwear=_string_list_field(reference_payload, "hair_or_headwear"),
@@ -301,6 +314,18 @@ def _string_field(payload: Mapping[str, Any], field_name: str) -> str:
     return value
 
 
+def _enum_field(
+    payload: Mapping[str, Any],
+    field_name: str,
+    allowed_values: tuple[str, ...],
+) -> str:
+    value = _string_field(payload, field_name)
+    if value not in allowed_values:
+        allowed = ", ".join(allowed_values)
+        raise PromptPlanError(f"{field_name} must be one of the allowed values: {allowed}")
+    return value
+
+
 def _string_list_field(payload: Mapping[str, Any], field_name: str) -> tuple[str, ...]:
     value = payload[field_name]
     if not isinstance(value, list):
@@ -336,7 +361,7 @@ def _validate_reference_identity(reference_identity: ReferenceIdentity) -> None:
 
 
 def _find_forbidden_identity_label(descriptor: str) -> str | None:
-    for label in FORBIDDEN_IDENTITY_LABELS:
+    for label in sorted(FORBIDDEN_IDENTITY_LABELS, key=len, reverse=True):
         pattern = _identity_label_pattern(label)
         if pattern.search(descriptor):
             return label
@@ -353,6 +378,8 @@ def _join_phrases(phrases: tuple[str, ...] | list[str]) -> str:
 
 
 __all__ = [
+    "ALLOWED_AGE_BANDS",
+    "ALLOWED_GENDER_PRESENTATIONS",
     "FIXED_PROMPT_CONSTRAINTS",
     "FORBIDDEN_IDENTITY_LABELS",
     "PromptPlan",

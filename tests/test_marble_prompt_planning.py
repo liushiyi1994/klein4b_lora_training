@@ -63,6 +63,32 @@ def test_parse_prompt_plan_rejects_race_or_ethnicity_descriptors() -> None:
         parse_prompt_plan(payload)
 
 
+def test_parse_prompt_plan_rejects_invalid_age_band() -> None:
+    payload = {
+        **VALID_PLAN,
+        "reference_identity": {
+            **VALID_PLAN["reference_identity"],
+            "age_band": "teenager",
+        },
+    }
+
+    with pytest.raises(PromptPlanError, match="age_band.*allowed"):
+        parse_prompt_plan(payload)
+
+
+def test_parse_prompt_plan_rejects_invalid_gender_presentation() -> None:
+    payload = {
+        **VALID_PLAN,
+        "reference_identity": {
+            **VALID_PLAN["reference_identity"],
+            "gender_presentation": "woman",
+        },
+    }
+
+    with pytest.raises(PromptPlanError, match="gender_presentation.*allowed"):
+        parse_prompt_plan(payload)
+
+
 def test_render_marble_prompt_is_final_image_prompt_with_fixed_constraints() -> None:
     plan = parse_prompt_plan(VALID_PLAN)
 
