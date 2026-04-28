@@ -11,6 +11,33 @@ def build_demo_prompt(trigger_word: str) -> str:
     )
 
 
+def build_marble_pair_prompt(pair_caption: str) -> str:
+    prompt = pair_caption.strip()
+    if prompt.startswith("transform into"):
+        prompt = prompt.replace("transform into", "Change image 1 into", 1)
+    return (
+        f"{prompt}. Do not preserve skin material, selfie lighting, skin shine, "
+        "makeup shine, wet lips, or catchlights from the reference. Use a rough "
+        "pitted low-albedo face surface with dry chalky unpolished stone, uneven "
+        "grey-brown mineral patina, subdued off-axis ambient lighting, and "
+        "asymmetrical stone lighting with one side of the face slightly darker "
+        "than the other, shadowed eye sockets, and shallow carved shadows under "
+        "the brow ridge, nose, lower lip, and chin; no full-face even "
+        "illumination, no frontal studio light, no head-on key light, no "
+        "perfect portrait lighting, no smooth beauty-render face, no polished "
+        "cheeks, no shiny forehead, no shiny nose, no shiny lips, no glossy "
+        "polished marble, no wet shine, no specular hotspots. The eyes must be "
+        "blank white sculpted stone eyes or closed carved eyelids; no pupils, "
+        "no irises, no colored eyes, no catchlights. Hair must be carved from "
+        "the same marble as the face. Use hairstyle only as sculptural shape "
+        "with broad chiseled grooves, solid stone masses, and marble veins "
+        "continuing through the hair; ignore natural hair color from the "
+        "reference and preserve only the hairstyle silhouette, braid shapes, "
+        "and carved lock structure; no individual hair strands, no natural "
+        "hair color, no glossy hair, no soft hair strands."
+    )
+
+
 def inference_defaults() -> dict[str, float | int]:
     return {"guidance_scale": 4.0, "num_inference_steps": 24}
 
