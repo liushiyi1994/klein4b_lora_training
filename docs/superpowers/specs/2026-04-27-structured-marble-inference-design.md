@@ -5,7 +5,7 @@
 Build and test a production-shaped inference path for the current best FLUX.2 Klein 4B marble bust setup:
 
 1. use `gpt-5.4-mini` as a vision prompt planner,
-2. generate a strict JSON description from the reference portrait and optional pseudo target,
+2. generate a strict JSON description from the reference portrait selfie only,
 3. render a deterministic final-image prompt from that JSON,
 4. run AI Toolkit sample-style Klein inference with the known best checkpoint/settings,
 5. compare the new output against the previous best sample-style output.
@@ -41,8 +41,8 @@ The additional-set comparison showed that specific final-image prompts beat one 
 The prompt-planning rule is:
 
 - input image: identity, pose, broad expression, face structure, hair/headwear silhouette
-- pseudo target: loose style and composition only
-- prompt: final statue description
+- fixed project style: Greek marble bust style, stone material, blank eyes, bust framing, broken base, localized lava, weathering, and dark ember background
+- prompt: final statue description built from reference-derived JSON plus fixed style constraints
 
 ## OpenAI API Design
 
@@ -51,9 +51,10 @@ Use the OpenAI Responses API with `gpt-5.4-mini`.
 The request should include:
 
 - planner instructions as text,
-- the reference portrait as an image input,
-- the pseudo target as a second image input when provided,
+- the reference portrait selfie as the only image input,
 - a strict JSON schema output format.
+
+The VLM must not receive the pseudo target. When a pseudo target path is provided to the CLI, it is only a human comparison artifact for the contact sheet and run record; it does not affect JSON planning or prompt rendering.
 
 The branch should keep OpenAI use isolated in one module so unit tests can fake the client without importing the real SDK. Runtime code should read the API key from the standard OpenAI client environment behavior and should not store keys in config or output artifacts.
 
@@ -82,7 +83,7 @@ The planner returns one object with exactly these top-level sections:
     "background": "dark ember background phrase"
   },
   "safety_overrides": {
-    "pseudo_target_identity_policy": "short phrase",
+    "identity_source_policy": "short phrase",
     "eye_policy": "short phrase",
     "material_policy": "short phrase",
     "banned_details": ["detail to suppress"]
@@ -91,6 +92,8 @@ The planner returns one object with exactly these top-level sections:
 ```
 
 The schema must avoid race and ethnicity fields entirely. The prompt renderer should also defensively reject descriptor strings that contain obvious race or ethnicity labels, because this project explicitly excludes those labels.
+
+`target_style` is produced from the project instructions and the reference image composition only. It is not extracted from a pseudo target image.
 
 ## Prompt Rendering
 
@@ -104,7 +107,7 @@ Change image 1 into a <mrblbust> from the reference portrait,
 
 The paragraph should then preserve reference-derived structural cues and add target-style cues. It must include these fixed constraints regardless of model output:
 
-- do not copy facial identity from the pseudo target,
+- use the reference portrait as the only identity, pose, face-structure, and hair/headwear source,
 - require blank sculpted stone eyes or closed carved eyelids,
 - ban pupils, irises, colored eyes, catchlights, painted eyes, and realistic human eyes,
 - require hair, eyebrows, facial hair, head coverings, and ornaments to be carved from the same marble as the face,
@@ -137,7 +140,7 @@ Inputs:
 
 - `--reference PATH` required,
 - `--output-dir PATH` required,
-- `--pseudo-target PATH` optional,
+- `--pseudo-target PATH` optional comparison-only image; never sent to OpenAI and never used for prompt rendering,
 - `--previous-best PATH` optional,
 - `--lora PATH` defaulting to the best 6500 checkpoint,
 - `--model gpt-5.4-mini` default,
@@ -162,7 +165,8 @@ Required unit coverage:
 
 - prompt plan schema/validation rejects race and ethnicity descriptors,
 - renderer includes required fixed constraints,
-- OpenAI planner builds a Responses request with image inputs and strict JSON schema,
+- OpenAI planner builds a Responses request with exactly one image input and strict JSON schema,
+- CLI treats `--pseudo-target` as comparison-only and never passes it to the planner,
 - CLI supports cached JSON replay without an OpenAI call,
 - AI Toolkit YAML renderer emits `ctrl_img_1`, best checkpoint/settings, negative prompt, and rank64/conv32 network settings,
 - contact sheet includes the expected columns when previous best and pseudo target are provided.
@@ -181,4 +185,3 @@ The global worktree exposes two pre-existing baseline issues:
 - `tests/test_paths.py` assumes the repository checkout directory is named `klein4b`, which fails in a global worktree.
 
 This branch may fix those narrowly so the inference worktree can have a meaningful test baseline. Those fixes should be kept separate from the new structured inference behavior.
-
