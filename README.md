@@ -1,4 +1,36 @@
-# README.md
+# Klein 4B Marble Bust Inference
+
+This branch contains the production inference-side pipeline for the
+selfie-to-Greek-marble statue bust project. Use this branch for SageMaker
+deployment and backend integration.
+
+Use the separate `klein-training` branch for dataset preparation, LoRA training,
+and checkpoint sweeps.
+
+## Production LoRA
+
+The production LoRA expected by this branch is trained from:
+
+```text
+configs/train_flux2_klein_marble_bust_v4_pairs_rich_result_caption_rank64_unquantized.template.yaml
+```
+
+That config lives on the `klein-training` branch and uses:
+
+- base model: `black-forest-labs/FLUX.2-klein-base-4B`
+- dataset: `data/marble-bust-data/v4_pairs_weathered_face_rich_result_caption`
+- LoRA rank: `linear: 64`, `conv: 32`
+- training length: `steps: 10000`
+- model quantization: `quantize: false`, `quantize_te: false`
+
+The artifact used for deployment is:
+
+```text
+marble_bust_v4_pairs_rich_result_caption_rank64_unquantized_style_000006500.safetensors
+```
+
+Do not commit the `.safetensors` file. Mount it in the model directory or point
+`KLEIN4B_LORA_PATH` at it.
 
 ## Local Bootstrap
 
@@ -21,8 +53,13 @@ python scripts/bootstrap_demo_dataset.py
 
 ## Train
 
+Production training is not run from this branch. Switch to `klein-training` and
+use the canonical config above.
+
 ```bash
-python scripts/train_lora.py
+git switch klein-training
+python scripts/train_lora.py \
+  --config configs/train_flux2_klein_marble_bust_v4_pairs_rich_result_caption_rank64_unquantized.template.yaml
 ```
 
 ## Inference
@@ -80,7 +117,7 @@ export KLEIN4B_OUTPUT_ROOT=/tmp/klein4b_sagemaker_outputs
 
 Backend handoff checklist:
 
-- Share this repo branch with the backend team: `production-sagemaker-inference`.
+- Share this repo branch with the backend team: `klein-inference`.
 - Provide the LoRA artifact separately from git:
   `marble_bust_v4_pairs_rich_result_caption_rank64_unquantized_style_000006500.safetensors`.
 - In deployment, either place that `.safetensors` file under `model_dir` or set
