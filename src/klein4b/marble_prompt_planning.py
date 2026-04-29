@@ -139,7 +139,10 @@ NATURAL_COLOR_WORDS = (
 
 FORBIDDEN_TARGET_STYLE_TERMS = (
     "background",
+    "bright",
+    "clean",
     "dark ember",
+    "finish",
     "glossy",
     "gray",
     "grey",
@@ -152,6 +155,7 @@ FORBIDDEN_TARGET_STYLE_TERMS = (
     "polished",
     "shine",
     "specular",
+    "smooth",
     "surface",
     "weather",
     "weathered",
@@ -180,17 +184,20 @@ FIXED_PROMPT_CONSTRAINTS = (
     "human eyes. Hair, eyebrows, facial hair, and any allowed "
     "ornament must be carved from the same marble as the face. Avoid modern "
     "design, modern decorative details, contemporary ornamentation, modern "
-    "accessories, and modern clothing. Use matte weathered grey marble, rough pitted "
-    "low-albedo face surface, dry chalky unpolished stone, uneven grey-brown "
-    "mineral patina, grime in recesses, chipped edges, and localized lava only "
+    "accessories, and modern clothing. Use mid-tone matte weathered grey marble, "
+    "rough pitted low-albedo face surface, dry chalky unpolished stone, uneven "
+    "grey-brown mineral patina, dark grime in facial grooves, hair grooves, eye "
+    "sockets, and drapery recesses, chipped edges, and localized lava only "
     "in the broken lower base against a dark ember background. Use subdued "
     "off-axis ambient lighting and "
     "asymmetrical stone lighting with one side of the face slightly darker "
     "than the other, shadowed eye sockets, and shallow carved shadows under "
-    "the brow ridge, nose, lower lip, and chin. Avoid glossy marble, glossy "
-    "polished marble, wet shine, specular hotspots, selfie lighting, beauty "
-    "lighting, full-face even illumination, frontal studio light, head-on key "
-    "light, perfect portrait lighting, smooth beauty-render face, polished "
+    "the brow ridge, nose, lower lip, and chin. Avoid bright white marble, clean "
+    "white stone, smooth clean marble finish, overbright highlights, glossy marble, "
+    "glossy polished marble, wet shine, specular hotspots, selfie lighting, "
+    "beauty lighting, full-face even illumination, high-key lighting, frontal "
+    "studio light, head-on key light, perfect portrait lighting, smooth beauty-render "
+    "face, polished "
     "cheeks, shiny forehead, shiny nose, shiny lips, modern design, modern "
     "decorative details, contemporary ornamentation, modern accessories, "
     "modern clothing, duplicate figures, side-by-side views, and collage."
@@ -236,7 +243,8 @@ PLANNER_INSTRUCTIONS = (
     "unstated visual source. Return only JSON matching the provided schema. Use "
     "target_style only for bust framing, statue angle, classical drapery or "
     "torso treatment, and non-modern carved ornament shape. Do not put marble "
-    "material, polish, lighting, background, lava, weathering, or surface finish "
+    "material, smoothness, polish, lighting, brightness, background, lava, "
+    "weathering, or surface finish "
     "language in target_style; the pipeline supplies those final style rules."
 )
 

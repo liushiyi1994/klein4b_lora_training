@@ -58,6 +58,11 @@ def test_render_sample_style_config_uses_best_klein_settings(tmp_path: Path) -> 
     assert "headscarf" in sample["neg"]
     assert "turban" in sample["neg"]
     assert "baseball cap" in sample["neg"]
+    assert "bright white marble" in sample["neg"]
+    assert "clean white stone" in sample["neg"]
+    assert "overbright highlights" in sample["neg"]
+    assert "high-key lighting" in sample["neg"]
+    assert "smooth marble finish" in sample["neg"]
 
 
 def test_render_sample_style_config_can_add_conditional_negative_terms(tmp_path: Path) -> None:

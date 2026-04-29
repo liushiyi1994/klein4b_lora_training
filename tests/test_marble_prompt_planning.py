@@ -280,6 +280,39 @@ def test_parse_prompt_plan_rejects_material_language_inside_target_style() -> No
         parse_prompt_plan(payload)
 
 
+@pytest.mark.parametrize(
+    "target_phrase",
+    [
+        "smooth marble torso",
+        "smooth marble finish",
+        "clean bright stone surface",
+    ],
+)
+def test_parse_prompt_plan_rejects_bright_smooth_finish_language_inside_target_style(
+    target_phrase: str,
+) -> None:
+    payload = {
+        **VALID_PLAN,
+        "target_style": {
+            **VALID_PLAN["target_style"],
+            "drapery_and_torso": ["simple classical drapery", target_phrase],
+        },
+    }
+
+    with pytest.raises(PromptPlanError, match="target_style must not include material"):
+        parse_prompt_plan(payload)
+
+
+def test_render_marble_prompt_hardens_against_bright_clean_marble() -> None:
+    prompt = render_marble_prompt(parse_prompt_plan(VALID_PLAN))
+
+    assert "mid-tone matte weathered grey marble" in prompt
+    assert "dark grime in facial grooves, hair grooves, eye sockets, and drapery recesses" in prompt
+    assert "Avoid bright white marble" in prompt
+    assert "clean white stone" in prompt
+    assert "overbright highlights" in prompt
+
+
 def test_render_marble_prompt_suppresses_selfie_artifact_details() -> None:
     payload = {
         **VALID_PLAN,
@@ -564,6 +597,9 @@ def test_bedrock_nova_planner_drops_material_language_from_target_style(
             "drapery_and_torso": [
                 "simple classical drapery",
                 "smooth surface treatment with polished finish",
+                "smooth marble torso",
+                "smooth marble finish",
+                "clean bright stone surface",
             ],
             "headpiece_or_ornament": [
                 "classical Greek laurel wreath carved as stone relief",
