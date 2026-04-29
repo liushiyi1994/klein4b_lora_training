@@ -91,6 +91,7 @@ SUPPRESSED_NON_GREEK_HEADWEAR_TERMS = (
     "headscarf",
     "headwrap",
     "hat",
+    "scarf",
     "turban",
     "veil",
 )
@@ -164,43 +165,38 @@ FORBIDDEN_TARGET_STYLE_TERMS = (
 )
 
 FIXED_PROMPT_CONSTRAINTS = (
-    "Use the reference portrait as the only identity, pose, face-structure, "
-    "hair silhouette, facial hair shape, and broad-expression source. "
-    "Use the reference portrait as the only source for identity-bearing face "
-    "structure, pose and head angle, age cues, gender presentation cues, hair "
-    "silhouette, facial hair shape, and broad expression only when useful. "
-    "Always preserve the selfie head direction and head angle; preserve "
-    "reference yaw, pitch, roll, gaze direction, and neck orientation; do not "
-    "normalize the bust to a frontal view or generic three-quarter view unless "
-    "the selfie has that orientation. "
-    "Always preserve the selfie hairstyle as carved marble, including length, part, "
-    "bangs, volume, curl or straightness, updo, hairline, and overall hair "
-    "mass; translate hair into carved stone hair, not decorative headwear. "
-    "Translate the person into a final marble bust rather than describing "
-    "selfie artifacts. Convert broad smiles or laughter into a subtle carved "
-    "smile or soft neutral expression, and omit hand gestures. "
-    "The eye area must follow the reference eye-state policy exactly; no pupils, "
-    "no irises, no colored eyes, no catchlights, no painted eyes, no realistic "
-    "human eyes. Hair, eyebrows, facial hair, and any allowed "
-    "ornament must be carved from the same marble as the face. Avoid modern "
-    "design, modern decorative details, contemporary ornamentation, modern "
-    "accessories, and modern clothing. Use mid-tone matte weathered grey marble, "
-    "rough pitted low-albedo face surface, dry chalky unpolished stone, uneven "
-    "grey-brown mineral patina, dark grime in facial grooves, hair grooves, eye "
-    "sockets, and drapery recesses, chipped edges, and localized lava only "
-    "in the broken lower base against a dark ember background. Use subdued "
-    "off-axis ambient lighting and "
-    "asymmetrical stone lighting with one side of the face slightly darker "
-    "than the other, shadowed eye sockets, and shallow carved shadows under "
-    "the brow ridge, nose, lower lip, and chin. Avoid bright white marble, clean "
-    "white stone, smooth clean marble finish, overbright highlights, glossy marble, "
-    "glossy polished marble, wet shine, specular hotspots, selfie lighting, "
-    "beauty lighting, full-face even illumination, high-key lighting, frontal "
-    "studio light, head-on key light, perfect portrait lighting, smooth beauty-render "
-    "face, polished "
-    "cheeks, shiny forehead, shiny nose, shiny lips, modern design, modern "
-    "decorative details, contemporary ornamentation, modern accessories, "
-    "modern clothing, duplicate figures, side-by-side views, and collage."
+    "matte weathered grey-brown marble, rough pitted low-albedo face surface, "
+    "dry chalky unpolished stone, dark grime packed into hair grooves, facial "
+    "grooves, eye sockets, garment seams, and drapery folds, chipped shoulders, "
+    "chipped edges, chipped lower bust, and localized lava only under the broken "
+    "lower rim against a dark ember background, no bright white marble, no clean "
+    "white stone, no smooth polished finish, no overbright highlights. Use the "
+    "reference portrait as the only identity, pose, face-structure, hair "
+    "silhouette, facial hair shape, broad expression, age cue, gender "
+    "presentation, head direction, and head angle source. Always preserve the "
+    "selfie head direction and head angle; preserve reference yaw, pitch, roll, "
+    "gaze direction, and neck orientation; do not normalize the bust to a frontal "
+    "view or generic three-quarter view unless the selfie has that orientation. "
+    "Always preserve the selfie hairstyle as carved marble mass, including length, part, "
+    "bangs, volume, curl or straightness, updo, hairline, and overall silhouette; "
+    "translate hair into carved stone hair, not decorative headwear. Do not add "
+    "decorative headwear or modern hair accessories. Do not preserve skin "
+    "material, selfie lighting, skin shine, makeup shine, wet lips, or "
+    "catchlights from the reference. Use subdued off-axis ambient lighting and "
+    "asymmetrical stone lighting with one side of the face distinctly darker "
+    "than the other, shadowed eye sockets, and shallow carved shadows under the "
+    "brow ridge, nose, lower lip, and chin; no full-face even illumination, no "
+    "frontal studio light, no head-on key light, no perfect portrait lighting, no "
+    "smooth beauty-render face, no polished cheeks, no shiny forehead, no shiny "
+    "nose, no shiny lips, no glossy polished marble, no wet shine, no specular "
+    "hotspots. If clothing or torso covering is visible, use classical carved "
+    "drapery or bare classical bust anatomy only; no modern shirt, no collar, no "
+    "buttons, no zipper, no jacket, no t-shirt, no fabric texture. Hair, "
+    "eyebrows, facial hair, and any allowed ornament must be carved from the "
+    "same marble as the face. Translate broad smiles into a subtle carved smile "
+    "and omit hand gestures. Avoid modern design, modern decorative details, "
+    "contemporary ornamentation, modern accessories, modern clothing, duplicate "
+    "figures, side-by-side views, and collage."
 )
 
 NO_ORNAMENT_POLICY = (
@@ -440,7 +436,6 @@ def render_marble_prompt(plan: PromptPlan) -> str:
 
     reference = plan.reference_identity
     target = plan.target_style
-    safety = plan.safety_overrides
 
     reference_parts = [
         f"{reference.age_band} age band",
@@ -462,19 +457,14 @@ def render_marble_prompt(plan: PromptPlan) -> str:
         _join_phrases(target.drapery_and_torso),
         ornament_text,
     ]
-    safety_parts = [
-        safety.identity_source_policy,
-        safety.material_policy,
-    ]
 
     return (
         "Change image 1 into a <mrblbust> from the reference portrait, "
         f"preserving {_join_phrases(reference_parts)}. "
-        f"Target style: {_join_phrases(target_parts)}. "
-        f"Planner safety overrides: {_join_phrases(safety_parts)}. "
-        f"{_render_ornament_policy(ornament_text)} "
+        f"The output should be a {_join_phrases(target_parts)}, "
         f"{_render_eye_policy(reference.eye_state)} "
-        f"{FIXED_PROMPT_CONSTRAINTS}"
+        f"{FIXED_PROMPT_CONSTRAINTS} "
+        f"{_render_ornament_policy(ornament_text)}"
     )
 
 
@@ -492,14 +482,16 @@ def _render_eye_policy(eye_state: str) -> str:
     if eye_state == "closed":
         return (
             "Reference eyes are closed; render closed carved eyelids only, "
-            "with no pupils, irises, catchlights, painted eyes, or realistic human eyes."
+            "carved from the same mid-tone grey marble as the face; no white eyeballs, "
+            "no bright eye whites, no pupils, no irises, no catchlights, no painted "
+            "eyes, no realistic human eyes."
         )
     return (
-        "Reference eyes are open or not clearly closed; render open blank sculpted stone "
-        "eyes with the reference eyelid shape and visible carved eye openings; do not "
-        "render closed eyes, lowered eyelids, sleeping eyelids, serene shut eyes, or "
-        "downcast closed eyes; no pupils, irises, catchlights, painted eyes, or "
-        "realistic human eyes."
+        "open blank carved grey stone eyes with visible carved eye openings, shadowed "
+        "eye sockets, and the same mid-tone grey marble as the face; no white eyeballs, "
+        "no bright eye whites, no pupils, no irises, no catchlights, no painted eyes, "
+        "no realistic human eyes; do not render closed eyes, lowered eyelids, sleeping "
+        "eyelids, serene shut eyes, or downcast closed eyes;"
     )
 
 

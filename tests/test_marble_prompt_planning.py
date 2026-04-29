@@ -162,6 +162,9 @@ def test_render_marble_prompt_is_final_image_prompt_with_fixed_constraints() -> 
     prompt = render_marble_prompt(plan)
 
     assert prompt.startswith("Change image 1 into a <mrblbust> from the reference portrait,")
+    assert "The output should be a centered chest-up Greek marble statue bust" in prompt
+    assert "Target style:" not in prompt
+    assert "Planner safety overrides:" not in prompt
     assert "child" in prompt
     assert "rounded cheeks" in prompt
     assert "short bob-like hair silhouette" in prompt
@@ -170,13 +173,14 @@ def test_render_marble_prompt_is_final_image_prompt_with_fixed_constraints() -> 
     assert "preserve the selfie head direction and head angle" in prompt
     assert "preserve reference yaw, pitch, roll, gaze direction, and neck orientation" in prompt
     assert "preserve the selfie hairstyle" in prompt
-    assert "render open blank sculpted stone eyes" in prompt
+    assert "open blank carved grey stone eyes with visible carved eye openings" in prompt
+    assert "same mid-tone grey marble as the face; no white eyeballs" in prompt
     assert "closed carved eyelids" not in prompt
     assert "dry chalky unpolished stone" in prompt
     assert "subdued off-axis ambient lighting" in prompt
     assert "asymmetrical stone lighting" in prompt
     assert "dark ember background" in prompt
-    assert "localized lava only in the broken lower base" in prompt
+    assert "localized lava only under the broken lower rim" in prompt
     assert "Preserve hair only; do not add a crown" in prompt
     assert "explicitly Greek headwear or ornament silhouette" not in prompt
     assert "Greek head covering or ornament" not in prompt
@@ -204,7 +208,7 @@ def test_render_marble_prompt_closes_eyes_only_when_reference_eyes_are_closed() 
     open_prompt = render_marble_prompt(parse_prompt_plan(VALID_PLAN))
 
     assert "Reference eyes are closed; render closed carved eyelids" in closed_prompt
-    assert "render open blank sculpted stone eyes" in open_prompt
+    assert "open blank carved grey stone eyes" in open_prompt
     assert "closed carved eyelids" not in open_prompt
 
 
@@ -306,10 +310,15 @@ def test_parse_prompt_plan_rejects_bright_smooth_finish_language_inside_target_s
 def test_render_marble_prompt_hardens_against_bright_clean_marble() -> None:
     prompt = render_marble_prompt(parse_prompt_plan(VALID_PLAN))
 
-    assert "mid-tone matte weathered grey marble" in prompt
-    assert "dark grime in facial grooves, hair grooves, eye sockets, and drapery recesses" in prompt
-    assert "Avoid bright white marble" in prompt
+    assert "matte weathered grey-brown marble" in prompt
+    assert (
+        "dark grime packed into hair grooves, facial grooves, eye sockets, "
+        "garment seams, and drapery folds"
+    ) in prompt
+    assert "chipped lower bust" in prompt
+    assert "no bright white marble" in prompt
     assert "clean white stone" in prompt
+    assert "smooth polished finish" in prompt
     assert "overbright highlights" in prompt
 
 
@@ -388,6 +397,7 @@ def test_render_marble_prompt_suppresses_non_greek_headwear() -> None:
             "hair_or_headwear": [
                 "closely cropped short hair",
                 "patterned cap with rounded crown",
+                "scarf draped over head and shoulders",
                 "geometric patterned headwear",
                 "wrapped headscarf with a turban-like silhouette",
             ],
@@ -410,6 +420,7 @@ def test_render_marble_prompt_suppresses_non_greek_headwear() -> None:
     assert "closely cropped short hair" in prompt
     assert "classical Greek laurel wreath carved as stone relief" in prompt
     assert "patterned cap" not in prompt
+    assert "scarf draped over head" not in prompt
     assert "geometric patterned headwear" not in prompt
     assert "headscarf" not in prompt
     assert "turban" not in prompt
