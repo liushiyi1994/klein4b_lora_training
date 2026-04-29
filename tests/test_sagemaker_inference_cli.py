@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import importlib.util
 import json
 from pathlib import Path
@@ -85,3 +86,49 @@ def test_local_cli_runs_sagemaker_functions_and_writes_response(
         "output_fn",
         {"prediction": "prediction", "accept": "application/json"},
     )
+
+
+def test_local_cli_can_send_stable_request_id_as_json(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = load_cli_module()
+    reference = tmp_path / "selfie.png"
+    model_dir = tmp_path / "model"
+    response_path = tmp_path / "response.json"
+    Image.new("RGB", (12, 16), "red").save(reference)
+    model_dir.mkdir()
+    input_calls: list[dict[str, object]] = []
+
+    monkeypatch.setattr(
+        module,
+        "load_model",
+        lambda **_kwargs: "model",
+    )
+
+    def fake_input_fn(request_body: bytes, request_content_type: str) -> str:
+        input_calls.append(
+            {"body": json.loads(request_body.decode("utf-8")), "content_type": request_content_type}
+        )
+        return "request"
+
+    monkeypatch.setattr(module, "input_fn", fake_input_fn)
+    monkeypatch.setattr(module, "predict_fn", lambda _input_data, _model: "prediction")
+    monkeypatch.setattr(module, "output_fn", lambda _prediction, _accept: json.dumps({"ok": True}))
+
+    module.main(
+        [
+            "--reference",
+            str(reference),
+            "--model-dir",
+            str(model_dir),
+            "--request-id",
+            "sample-5",
+            "--output",
+            str(response_path),
+        ]
+    )
+
+    assert input_calls[0]["content_type"] == "application/json"
+    assert input_calls[0]["body"]["request_id"] == "sample-5"
+    assert base64.b64decode(input_calls[0]["body"]["image_base64"]) == reference.read_bytes()

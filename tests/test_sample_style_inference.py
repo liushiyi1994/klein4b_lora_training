@@ -8,6 +8,7 @@ import yaml
 from klein4b.sample_style_inference import (
     DEFAULT_BEST_LORA_PATH,
     build_ai_toolkit_command,
+    negative_prompt_additions_for_eye_state,
     render_sample_style_config,
 )
 
@@ -57,6 +58,35 @@ def test_render_sample_style_config_uses_best_klein_settings(tmp_path: Path) -> 
     assert "headscarf" in sample["neg"]
     assert "turban" in sample["neg"]
     assert "baseball cap" in sample["neg"]
+
+
+def test_render_sample_style_config_can_add_conditional_negative_terms(tmp_path: Path) -> None:
+    reference = tmp_path / "selfie.png"
+    lora = tmp_path / "weights.safetensors"
+    output_dir = tmp_path / "out"
+
+    config_text = render_sample_style_config(
+        name="structured_marble_test",
+        training_folder=output_dir,
+        reference_path=reference,
+        prompt="Change image 1 into a <mrblbust> from the reference portrait",
+        lora_path=lora,
+        negative_prompt_additions=("closed eyes", "lowered eyelids"),
+    )
+    payload = yaml.safe_load(config_text)
+    negative_prompt = payload["config"]["process"][0]["sample"]["neg"]
+
+    assert "closed eyes" in negative_prompt
+    assert "lowered eyelids" in negative_prompt
+
+
+def test_open_eye_negative_prompt_additions_are_conditional() -> None:
+    open_terms = negative_prompt_additions_for_eye_state("open")
+
+    assert "closed eyes" in open_terms
+    assert "lowered eyelids" in open_terms
+    assert negative_prompt_additions_for_eye_state("unknown") == open_terms
+    assert negative_prompt_additions_for_eye_state("closed") == ()
 
 
 def test_default_best_lora_path_points_to_step_6500() -> None:

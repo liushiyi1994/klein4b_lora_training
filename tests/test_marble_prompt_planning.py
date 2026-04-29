@@ -18,6 +18,7 @@ VALID_PLAN = {
     "reference_identity": {
         "age_band": "child",
         "gender_presentation": "feminine",
+        "eye_state": "open",
         "head_pose": "slight left-facing three-quarter head pose",
         "face_structure": ["rounded cheeks", "small compact jaw", "short nose"],
         "hair_or_headwear": ["short bob-like hair silhouette with soft bangs"],
@@ -78,6 +79,8 @@ def test_planner_instructions_translate_selfie_cues_without_artifacts() -> None:
     assert "hair silhouette" in instructions
     assert "hairstyle" in instructions
     assert "facial hair" in instructions
+    assert "eye_state" in instructions
+    assert "closed only when both eyes are clearly closed" in instructions
     assert "do not invent greek ornaments" in instructions
     assert "laurel wreaths" in instructions
     assert "modern clothing" in instructions
@@ -106,6 +109,25 @@ def test_parse_prompt_plan_rejects_race_or_ethnicity_descriptors() -> None:
 
     with pytest.raises(PromptPlanError, match="race or ethnicity"):
         parse_prompt_plan(payload)
+
+
+def test_parse_prompt_plan_allows_natural_hair_color_words() -> None:
+    payload = {
+        **VALID_PLAN,
+        "reference_identity": {
+            **VALID_PLAN["reference_identity"],
+            "hair_or_headwear": ["short white hair", "black curls"],
+        },
+    }
+
+    plan = parse_prompt_plan(payload)
+    prompt = render_marble_prompt(plan)
+
+    assert plan.reference_identity.hair_or_headwear == ("short white hair", "black curls")
+    assert "short hair" in prompt
+    assert "curls" in prompt
+    assert "white hair" not in prompt
+    assert "black curls" not in prompt
 
 
 def test_parse_prompt_plan_rejects_invalid_age_band() -> None:
@@ -148,7 +170,8 @@ def test_render_marble_prompt_is_final_image_prompt_with_fixed_constraints() -> 
     assert "preserve the selfie head direction and head angle" in prompt
     assert "preserve reference yaw, pitch, roll, gaze direction, and neck orientation" in prompt
     assert "preserve the selfie hairstyle" in prompt
-    assert "blank sculpted stone eyes or closed carved eyelids" in prompt
+    assert "render open blank sculpted stone eyes" in prompt
+    assert "closed carved eyelids" not in prompt
     assert "dry chalky unpolished stone" in prompt
     assert "subdued off-axis ambient lighting" in prompt
     assert "asymmetrical stone lighting" in prompt
@@ -164,6 +187,46 @@ def test_render_marble_prompt_is_final_image_prompt_with_fixed_constraints() -> 
     assert "no catchlights" in prompt
     assert "same marble as the face" in prompt
     assert "pseudo target" not in prompt.lower()
+
+
+def test_render_marble_prompt_closes_eyes_only_when_reference_eyes_are_closed() -> None:
+    closed_eye_plan = parse_prompt_plan(
+        {
+            **VALID_PLAN,
+            "reference_identity": {
+                **VALID_PLAN["reference_identity"],
+                "eye_state": "closed",
+            },
+        }
+    )
+
+    closed_prompt = render_marble_prompt(closed_eye_plan)
+    open_prompt = render_marble_prompt(parse_prompt_plan(VALID_PLAN))
+
+    assert "Reference eyes are closed; render closed carved eyelids" in closed_prompt
+    assert "render open blank sculpted stone eyes" in open_prompt
+    assert "closed carved eyelids" not in open_prompt
+
+
+def test_render_marble_prompt_forbids_lowered_eyelids_for_open_reference_eyes() -> None:
+    prompt = render_marble_prompt(parse_prompt_plan(VALID_PLAN))
+
+    assert "do not render closed eyes, lowered eyelids, sleeping eyelids" in prompt
+
+
+def test_parse_prompt_plan_defaults_legacy_missing_eye_state_to_open() -> None:
+    payload = {
+        **VALID_PLAN,
+        "reference_identity": {
+            key: value
+            for key, value in VALID_PLAN["reference_identity"].items()
+            if key != "eye_state"
+        },
+    }
+
+    plan = parse_prompt_plan(payload)
+
+    assert plan.reference_identity.eye_state == "open"
 
 
 def test_render_marble_prompt_uses_conditional_ornament_policy() -> None:

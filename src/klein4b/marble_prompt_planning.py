@@ -25,6 +25,12 @@ ALLOWED_GENDER_PRESENTATIONS = (
     "unknown",
 )
 
+ALLOWED_EYE_STATES = (
+    "open",
+    "closed",
+    "unknown",
+)
+
 FORBIDDEN_IDENTITY_LABELS = (
     "african",
     "asian",
@@ -169,9 +175,9 @@ FIXED_PROMPT_CONSTRAINTS = (
     "Translate the person into a final marble bust rather than describing "
     "selfie artifacts. Convert broad smiles or laughter into a subtle carved "
     "smile or soft neutral expression, and omit hand gestures. "
-    "The eyes must be blank sculpted stone eyes or closed carved eyelids; "
-    "no pupils, no irises, no colored eyes, no catchlights, no painted eyes, "
-    "no realistic human eyes. Hair, eyebrows, facial hair, and any allowed "
+    "The eye area must follow the reference eye-state policy exactly; no pupils, "
+    "no irises, no colored eyes, no catchlights, no painted eyes, no realistic "
+    "human eyes. Hair, eyebrows, facial hair, and any allowed "
     "ornament must be carved from the same marble as the face. Avoid modern "
     "design, modern decorative details, contemporary ornamentation, modern "
     "accessories, and modern clothing. Use matte weathered grey marble, rough pitted "
@@ -201,8 +207,10 @@ PLANNER_INSTRUCTIONS = (
     "single image as the only source for identity-bearing face structure, pose "
     "and head angle, head direction, broad expression only if useful, hair "
     "silhouette, hairstyle, facial hair shape, age cues, "
-    "gender presentation cues, and "
+    "gender presentation cues, eye_state, and "
     "distinctive non-modern ornaments only if they can become carved stone. "
+    "Set reference_identity.eye_state to closed only when both eyes are clearly closed "
+    "in the selfie; otherwise set it to open, including squinting or partially open eyes. "
     "Preserve the selfie head direction and head angle, including yaw, pitch, "
     "roll, gaze direction, and neck orientation; do not normalize the person "
     "to a frontal or generic three-quarter bust unless the selfie has that "
@@ -240,6 +248,15 @@ _REFERENCE_IDENTITY_KEYS = (
     "hair_or_headwear",
     "broad_expression",
 )
+_REFERENCE_IDENTITY_KEYS_WITH_EYE_STATE = (
+    "age_band",
+    "gender_presentation",
+    "eye_state",
+    "head_pose",
+    "face_structure",
+    "hair_or_headwear",
+    "broad_expression",
+)
 _TARGET_STYLE_KEYS = (
     "bust_framing",
     "statue_angle",
@@ -263,6 +280,7 @@ class PromptPlanError(ValueError):
 class ReferenceIdentity:
     age_band: str
     gender_presentation: str
+    eye_state: str
     head_pose: str
     face_structure: tuple[str, ...]
     hair_or_headwear: tuple[str, ...]
@@ -311,6 +329,10 @@ def build_prompt_plan_schema() -> dict[str, Any]:
                 "type": "string",
                 "enum": list(ALLOWED_GENDER_PRESENTATIONS),
             },
+            "eye_state": {
+                "type": "string",
+                "enum": list(ALLOWED_EYE_STATES),
+            },
             "head_pose": string_schema,
             "face_structure": string_list_schema,
             "hair_or_headwear": string_list_schema,
@@ -355,11 +377,17 @@ def parse_prompt_plan(payload: Mapping[str, Any]) -> PromptPlan:
 
     _require_exact_keys(payload, _PROMPT_PLAN_KEYS, "prompt plan")
 
-    reference_payload = _mapping_field(payload, "reference_identity")
+    reference_payload = _normalize_reference_identity_payload(
+        _mapping_field(payload, "reference_identity")
+    )
     target_payload = _mapping_field(payload, "target_style")
     safety_payload = _mapping_field(payload, "safety_overrides")
 
-    _require_exact_keys(reference_payload, _REFERENCE_IDENTITY_KEYS, "reference_identity")
+    _require_exact_keys(
+        reference_payload,
+        _REFERENCE_IDENTITY_KEYS_WITH_EYE_STATE,
+        "reference_identity",
+    )
     _require_exact_keys(target_payload, _TARGET_STYLE_KEYS, "target_style")
     _require_exact_keys(safety_payload, _SAFETY_OVERRIDE_KEYS, "safety_overrides")
 
@@ -370,6 +398,7 @@ def parse_prompt_plan(payload: Mapping[str, Any]) -> PromptPlan:
             "gender_presentation",
             ALLOWED_GENDER_PRESENTATIONS,
         ),
+        eye_state=_enum_field(reference_payload, "eye_state", ALLOWED_EYE_STATES),
         head_pose=_string_field(reference_payload, "head_pose"),
         face_structure=_string_list_field(reference_payload, "face_structure"),
         hair_or_headwear=_string_list_field(reference_payload, "hair_or_headwear"),
@@ -427,7 +456,6 @@ def render_marble_prompt(plan: PromptPlan) -> str:
     ]
     safety_parts = [
         safety.identity_source_policy,
-        safety.eye_policy,
         safety.material_policy,
     ]
 
@@ -437,6 +465,7 @@ def render_marble_prompt(plan: PromptPlan) -> str:
         f"Target style: {_join_phrases(target_parts)}. "
         f"Planner safety overrides: {_join_phrases(safety_parts)}. "
         f"{_render_ornament_policy(ornament_text)} "
+        f"{_render_eye_policy(reference.eye_state)} "
         f"{FIXED_PROMPT_CONSTRAINTS}"
     )
 
@@ -449,6 +478,21 @@ def _render_ornament_policy(ornament_text: str) -> str:
             "or contemporary ornament."
         )
     return NO_ORNAMENT_POLICY
+
+
+def _render_eye_policy(eye_state: str) -> str:
+    if eye_state == "closed":
+        return (
+            "Reference eyes are closed; render closed carved eyelids only, "
+            "with no pupils, irises, catchlights, painted eyes, or realistic human eyes."
+        )
+    return (
+        "Reference eyes are open or not clearly closed; render open blank sculpted stone "
+        "eyes with the reference eyelid shape and visible carved eye openings; do not "
+        "render closed eyes, lowered eyelids, sleeping eyelids, serene shut eyes, or "
+        "downcast closed eyes; no pupils, irises, catchlights, painted eyes, or "
+        "realistic human eyes."
+    )
 
 
 def image_path_to_data_url(reference_path: Path) -> str:
@@ -653,6 +697,14 @@ def _mapping_field(payload: Mapping[str, Any], field_name: str) -> Mapping[str, 
     return value
 
 
+def _normalize_reference_identity_payload(payload: Mapping[str, Any]) -> Mapping[str, Any]:
+    if "eye_state" in payload:
+        return payload
+    normalized = dict(payload)
+    normalized["eye_state"] = "open"
+    return normalized
+
+
 def _require_exact_keys(
     payload: Mapping[str, Any],
     expected_keys: tuple[str, ...],
@@ -712,12 +764,20 @@ def _validate_reference_identity(reference_identity: ReferenceIdentity) -> None:
         reference_identity.gender_presentation,
         reference_identity.head_pose,
         *reference_identity.face_structure,
-        *reference_identity.hair_or_headwear,
         reference_identity.broad_expression,
     )
     for descriptor in descriptors:
         matched_label = _find_forbidden_identity_label(descriptor)
         if matched_label is not None:
+            raise PromptPlanError(
+                "reference_identity must not include race or ethnicity descriptors "
+                f"(matched {matched_label!r})"
+            )
+    for descriptor in reference_identity.hair_or_headwear:
+        matched_label = _find_forbidden_identity_label(descriptor)
+        if matched_label is not None and not _is_allowed_natural_hair_color_descriptor(
+            descriptor, matched_label
+        ):
             raise PromptPlanError(
                 "reference_identity must not include race or ethnicity descriptors "
                 f"(matched {matched_label!r})"
@@ -754,6 +814,20 @@ def _find_forbidden_target_style_term(descriptor: str) -> str | None:
         if pattern.search(descriptor):
             return term
     return None
+
+
+def _is_allowed_natural_hair_color_descriptor(descriptor: str, matched_label: str) -> bool:
+    if matched_label not in {"black", "white"}:
+        return False
+    return (
+        re.search(
+            rf"\b{re.escape(matched_label)}\s+"
+            r"(?:hair|hairstyle|curls|curl|beard|mustache|moustache|eyebrows?|sideburns?)\b",
+            descriptor,
+            flags=re.I,
+        )
+        is not None
+    )
 
 
 def _identity_label_pattern(label: str) -> re.Pattern[str]:

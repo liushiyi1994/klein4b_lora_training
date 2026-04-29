@@ -5,12 +5,14 @@ import json
 import sys
 from pathlib import Path
 
+import yaml
 from PIL import Image
 
 VALID_PLAN = {
     "reference_identity": {
         "age_band": "child",
         "gender_presentation": "feminine",
+        "eye_state": "open",
         "head_pose": "slight left-facing three-quarter head pose",
         "face_structure": ["rounded cheeks", "small compact jaw", "short nose"],
         "hair_or_headwear": ["short bob-like hair silhouette with soft bangs"],
@@ -96,6 +98,12 @@ def test_cli_replays_cached_prompt_plan_without_openai_or_ai_toolkit(
         .startswith("Change image 1 into a <mrblbust>")
     )
     assert (output_dir / "sample_style_inference.yaml").exists()
+    sample_config = yaml.safe_load(
+        (output_dir / "sample_style_inference.yaml").read_text(encoding="utf-8")
+    )
+    negative_prompt = sample_config["config"]["process"][0]["sample"]["neg"]
+    assert "closed eyes" in negative_prompt
+    assert "lowered eyelids" in negative_prompt
     assert (output_dir / "contact_sheet.jpg").exists()
 
 

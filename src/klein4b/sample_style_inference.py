@@ -33,6 +33,15 @@ DEFAULT_NEGATIVE_PROMPT = (
     "bonnet, veil, "
     "duplicate figures, side-by-side views, collage"
 )
+OPEN_EYE_NEGATIVE_PROMPT_ADDITIONS = (
+    "closed eyes",
+    "closed eyelids",
+    "lowered eyelids",
+    "sleeping eyelids",
+    "shut eyes",
+    "serene shut eyes",
+    "downcast closed eyes",
+)
 
 
 def render_sample_style_config(
@@ -41,6 +50,7 @@ def render_sample_style_config(
     reference_path: Path,
     prompt: str,
     lora_path: Path = DEFAULT_BEST_LORA_PATH,
+    negative_prompt_additions: tuple[str, ...] = (),
 ) -> str:
     payload = {
         "job": "extension",
@@ -85,7 +95,7 @@ def render_sample_style_config(
                         "width": 768,
                         "height": 1024,
                         "samples": [{"prompt": prompt, "ctrl_img_1": str(reference_path)}],
-                        "neg": DEFAULT_NEGATIVE_PROMPT,
+                        "neg": _build_negative_prompt(negative_prompt_additions),
                         "seed": 7,
                         "guidance_scale": 2.5,
                         "sample_steps": 24,
@@ -96,6 +106,21 @@ def render_sample_style_config(
     }
 
     return yaml.safe_dump(payload, sort_keys=False)
+
+
+def negative_prompt_additions_for_eye_state(eye_state: str) -> tuple[str, ...]:
+    if eye_state == "closed":
+        return ()
+    return OPEN_EYE_NEGATIVE_PROMPT_ADDITIONS
+
+
+def _build_negative_prompt(additions: tuple[str, ...]) -> str:
+    prompt = DEFAULT_NEGATIVE_PROMPT
+    for term in additions:
+        normalized = term.strip()
+        if normalized and normalized not in prompt:
+            prompt = f"{prompt}, {normalized}"
+    return prompt
 
 
 def build_ai_toolkit_command(ai_toolkit_dir: Path, config_path: Path) -> list[str]:

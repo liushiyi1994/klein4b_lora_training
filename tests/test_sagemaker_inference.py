@@ -6,6 +6,7 @@ import json
 from io import BytesIO
 from pathlib import Path
 
+import yaml
 from PIL import Image
 
 from klein4b.marble_prompt_planning import parse_prompt_plan
@@ -22,6 +23,7 @@ VALID_PLAN = {
     "reference_identity": {
         "age_band": "child",
         "gender_presentation": "feminine",
+        "eye_state": "open",
         "head_pose": "slight left-facing three-quarter head pose",
         "face_structure": ["rounded cheeks", "small compact jaw", "short nose"],
         "hair_or_headwear": ["short bob-like hair silhouette with soft bangs"],
@@ -175,6 +177,12 @@ def test_predict_fn_writes_artifacts_and_returns_json_ready_prediction(
     assert (output_dir / "generated.jpg").exists()
     assert (output_dir / "run_config.json").exists()
     assert (output_dir / "timing.json").exists()
+    sample_config = yaml.safe_load(
+        (output_dir / "sample_style_inference.yaml").read_text(encoding="utf-8")
+    )
+    negative_prompt = sample_config["config"]["process"][0]["sample"]["neg"]
+    assert "closed eyes" in negative_prompt
+    assert "lowered eyelids" in negative_prompt
     assert "pseudo_target" not in (output_dir / "run_config.json").read_text(encoding="utf-8")
     assert response["request_id"] == "prod-case"
     assert response["content_type"] == "image/jpeg"

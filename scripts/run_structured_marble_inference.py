@@ -24,6 +24,7 @@ from klein4b.sample_style_inference import (  # noqa: E402
     build_ai_toolkit_command,
     find_latest_sample,
     make_comparison_contact_sheet,
+    negative_prompt_additions_for_eye_state,
     render_sample_style_config,
 )
 
@@ -95,6 +96,9 @@ def main(argv: list[str] | None = None) -> None:
             reference_path=args.reference,
             prompt=prompt,
             lora_path=args.lora,
+            negative_prompt_additions=negative_prompt_additions_for_eye_state(
+                prompt_plan.reference_identity.eye_state
+            ),
         ),
         encoding="utf-8",
     )
@@ -159,6 +163,7 @@ def _prompt_plan_to_payload(prompt_plan) -> dict[str, object]:
         "reference_identity": {
             "age_band": reference.age_band,
             "gender_presentation": reference.gender_presentation,
+            "eye_state": reference.eye_state,
             "head_pose": reference.head_pose,
             "face_structure": list(reference.face_structure),
             "hair_or_headwear": list(reference.hair_or_headwear),
