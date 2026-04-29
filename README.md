@@ -78,9 +78,28 @@ export KLEIN4B_AI_TOOLKIT_DIR=/path/to/vendor/ai-toolkit
 export KLEIN4B_OUTPUT_ROOT=/tmp/klein4b_sagemaker_outputs
 ```
 
+Backend handoff checklist:
+
+- Share this repo branch with the backend team: `production-sagemaker-inference`.
+- Provide the LoRA artifact separately from git:
+  `marble_bust_v4_pairs_rich_result_caption_rank64_unquantized_style_000006500.safetensors`.
+- In deployment, either place that `.safetensors` file under `model_dir` or set
+  `KLEIN4B_LORA_PATH` to its mounted path. If `KLEIN4B_LORA_PATH` is omitted,
+  `model_fn` uses the first `*.safetensors` file found under `model_dir`.
+- Provide or build a runtime with the pinned AI Toolkit checkout, compatible
+  CUDA/PyTorch packages, and the Python dependencies from `requirements.txt`.
+- Ensure the SageMaker/container role has Bedrock runtime access to
+  `us.amazon.nova-2-lite-v1:0` in `us-east-2`.
+- Ensure the base FLUX.2 Klein 4B model is available to the runtime through the
+  normal AI Toolkit/model-cache mechanism.
+- Do not share `.env`, AWS credentials, private selfies, pseudo targets, or
+  generated eval outputs as part of the repo handoff.
+
 The prompt planner tracks reference eye state. Generated busts should render
 open blank carved eyes unless the selfie clearly has both eyes closed. Open-eye
 requests also add closed/lowered eyelid terms to the AI Toolkit negative prompt.
+The prompt also forces a closed mouth with sealed lips and suppresses teeth,
+open-mouth smiles, and parted lips.
 
 Local SageMaker-compatible smoke test:
 
