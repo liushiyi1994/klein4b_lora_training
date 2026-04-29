@@ -27,6 +27,81 @@ python scripts/train_lora.py
 
 ## Inference
 
+### Production SageMaker Inference
+
+This branch includes the production selfie-to-marble-bust inference path for
+backend integration. The SageMaker entry point is:
+
+```text
+sagemaker/inference.py
+```
+
+It exposes the standard handler functions:
+
+- `model_fn(model_dir)`
+- `input_fn(request_body, request_content_type)`
+- `predict_fn(input_data, model)`
+- `output_fn(prediction, response_content_type)`
+
+The implementation lives in `src/klein4b/sagemaker_inference.py`. See
+`docs/sagemaker_inference_handoff.md` for the full request/response contract.
+
+Production input must be only the selfie/reference image. Do not send pseudo
+targets to the VLM or SageMaker handler; JSON keys containing `pseudo_target`
+are rejected. Pseudo targets are comparison-only eval artifacts.
+
+Supported request formats:
+
+- `application/json` with `image_base64`
+- raw `image/png`
+- raw `image/jpeg`
+- raw `image/webp`
+
+Example JSON request:
+
+```json
+{
+  "request_id": "case-001",
+  "image_base64": "<base64 encoded selfie image>",
+  "metadata": {}
+}
+```
+
+Required production configuration:
+
+```bash
+export KLEIN4B_PLANNER_PROVIDER=bedrock-nova
+export KLEIN4B_PLANNER_MODEL=us.amazon.nova-2-lite-v1:0
+export AWS_REGION=us-east-2
+export KLEIN4B_LORA_PATH=/path/to/marble_bust_v4_pairs_rich_result_caption_rank64_unquantized_style_000006500.safetensors
+export KLEIN4B_AI_TOOLKIT_DIR=/path/to/vendor/ai-toolkit
+export KLEIN4B_OUTPUT_ROOT=/tmp/klein4b_sagemaker_outputs
+```
+
+The prompt planner tracks reference eye state. Generated busts should render
+open blank carved eyes unless the selfie clearly has both eyes closed. Open-eye
+requests also add closed/lowered eyelid terms to the AI Toolkit negative prompt.
+
+Local SageMaker-compatible smoke test:
+
+```bash
+python scripts/run_sagemaker_marble_inference_local.py \
+  --reference /path/to/selfie.png \
+  --model-dir /path/to/model_dir_with_lora \
+  --request-id case-001 \
+  --output-root /tmp/klein4b_sagemaker_outputs \
+  --ai-toolkit-dir /path/to/vendor/ai-toolkit \
+  --planner-provider bedrock-nova \
+  --model us.amazon.nova-2-lite-v1:0 \
+  --aws-region us-east-2 \
+  --output /tmp/klein4b_response.json
+```
+
+Generated request artifacts are written under
+`KLEIN4B_OUTPUT_ROOT/<request_id>/` and should stay untracked.
+
+### Legacy Demo Inference
+
 ```bash
 LORA_PATH=$(find outputs/runs -name '*.safetensors' | sort | tail -n 1)
 mkdir -p outputs/eval/base outputs/eval/lora

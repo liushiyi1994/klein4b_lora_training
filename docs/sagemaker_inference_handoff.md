@@ -15,6 +15,8 @@ the implementation in `src/klein4b/sagemaker_inference.py`.
 
 The production path accepts only the selfie/reference image. It does not accept or
 forward pseudo targets. Any JSON request key containing `pseudo_target` is rejected.
+The prompt planner records `reference_identity.eye_state`; generated busts keep
+open blank carved eyes unless both selfie eyes are clearly closed.
 
 Supported request content types:
 
@@ -89,8 +91,11 @@ The local runner exercises the same four SageMaker functions:
 python scripts/run_sagemaker_marble_inference_local.py \
   --reference /path/to/selfie.png \
   --model-dir /path/to/model_dir_with_lora \
+  --request-id case-123 \
   --output-root /tmp/klein4b_sagemaker_outputs \
   --ai-toolkit-dir /path/to/vendor/ai-toolkit \
+  --planner-provider bedrock-nova \
+  --model us.amazon.nova-2-lite-v1:0 \
   --aws-region us-east-2 \
   --output /tmp/klein4b_response.json
 ```
