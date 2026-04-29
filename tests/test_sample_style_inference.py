@@ -63,6 +63,9 @@ def test_render_sample_style_config_uses_best_klein_settings(tmp_path: Path) -> 
     assert "overbright highlights" in sample["neg"]
     assert "high-key lighting" in sample["neg"]
     assert "smooth marble finish" in sample["neg"]
+    assert "teeth" in sample["neg"]
+    assert "open mouth" in sample["neg"]
+    assert "parted lips" in sample["neg"]
 
 
 def test_render_sample_style_config_can_add_conditional_negative_terms(tmp_path: Path) -> None:

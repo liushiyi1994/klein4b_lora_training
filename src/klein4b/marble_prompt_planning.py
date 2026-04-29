@@ -67,18 +67,26 @@ SUPPRESSED_SELFIE_ARTIFACT_TERMS = (
     "headband",
     "jacket",
     "jewelry",
+    "laugh",
+    "laughing",
     "lipstick",
     "makeup",
+    "open mouth",
+    "open-mouthed",
+    "parted lips",
     "peace sign",
     "phone",
     "ribbon",
     "selfie",
     "shirt",
     "skin texture",
+    "smile",
+    "smiling",
     "t-shirt",
     "teeth",
     "thumbs up",
     "tiara",
+    "toothy",
     "watch",
 )
 
@@ -193,7 +201,9 @@ FIXED_PROMPT_CONSTRAINTS = (
     "drapery or bare classical bust anatomy only; no modern shirt, no collar, no "
     "buttons, no zipper, no jacket, no t-shirt, no fabric texture. Hair, "
     "eyebrows, facial hair, and any allowed ornament must be carved from the "
-    "same marble as the face. Translate broad smiles into a subtle carved smile "
+    "same marble as the face. Keep the mouth closed with sealed lips; no teeth, "
+    "no carved teeth, no open mouth, no parted lips. Translate broad smiles into "
+    "a subtle closed-mouth carved smile or soft closed-mouth neutral expression "
     "and omit hand gestures. Avoid modern design, modern decorative details, "
     "contemporary ornamentation, modern accessories, modern clothing, duplicate "
     "figures, side-by-side views, and collage."
@@ -221,7 +231,9 @@ PLANNER_INSTRUCTIONS = (
     "selfie hairstyle as carved marble, including length, part, bangs, volume, "
     "curl or straightness, updo, hairline, and overall hair mass. "
     "Translate the person into a final marble bust; do not describe the selfie. "
-    "A smile can become a subtle carved smile or soft neutral expression. "
+    "A smile can become a subtle closed-mouth carved smile or soft closed-mouth "
+    "neutral expression. The final bust must have a shut mouth with sealed lips; "
+    "do not show teeth, carved teeth, an open mouth, or parted lips. "
     "Suppress modern clothing, glasses, earbuds, watches, phones, jewelry that "
     "reads modern, modern hair accessories, bows, ribbons, clips, bands, hats, "
     "caps, headscarves, headwraps, turbans, veils, selfie lighting, camera "
@@ -838,11 +850,11 @@ def _identity_label_pattern(label: str) -> re.Pattern[str]:
 def _translate_expression_phrase(phrase: str) -> str:
     lowered = phrase.lower()
     if any(marker in lowered for marker in ("smile", "laugh", "grin")):
-        return "subtle carved smile"
+        return "subtle closed-mouth carved smile"
     if any(
         marker in lowered for marker in ("open-mouthed", "visible teeth", "pout", "exaggerated")
     ):
-        return "soft neutral expression"
+        return "soft closed-mouth neutral expression"
     return _sanitize_reference_phrase(phrase)
 
 

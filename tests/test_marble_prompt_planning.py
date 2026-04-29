@@ -350,7 +350,7 @@ def test_render_marble_prompt_suppresses_selfie_artifact_details() -> None:
 
     assert "rounded cheeks" in prompt
     assert "short wavy hair" in prompt
-    assert "subtle carved smile" in prompt
+    assert "subtle closed-mouth carved smile" in prompt
     assert "eyeliner" not in prompt
     assert "upper teeth" not in prompt
     assert "complexion" not in prompt
@@ -362,6 +362,36 @@ def test_render_marble_prompt_suppresses_selfie_artifact_details() -> None:
     assert "eyeglass" not in prompt
     assert "open-mouthed" not in prompt
     assert "visible upper teeth" not in prompt
+
+
+def test_render_marble_prompt_forces_closed_mouth_without_teeth() -> None:
+    payload = {
+        **VALID_PLAN,
+        "reference_identity": {
+            **VALID_PLAN["reference_identity"],
+            "face_structure": [
+                "rounded cheeks",
+                "wide smile",
+                "parted lips with visible teeth",
+            ],
+            "broad_expression": "wide toothy grin with visible teeth",
+        },
+    }
+    plan = parse_prompt_plan(payload)
+
+    prompt = render_marble_prompt(plan)
+
+    assert "rounded cheeks" in prompt
+    assert "subtle closed-mouth carved smile" in prompt
+    assert "mouth closed" in prompt
+    assert "sealed lips" in prompt
+    assert "no teeth" in prompt
+    assert "no parted lips" in prompt
+    assert "wide smile" not in prompt
+    assert "parted lips with visible teeth" not in prompt
+    assert "visible teeth" not in prompt
+    assert "toothy" not in prompt
+    assert "grin" not in prompt
 
 
 def test_render_marble_prompt_keeps_greek_style_ornaments_only() -> None:

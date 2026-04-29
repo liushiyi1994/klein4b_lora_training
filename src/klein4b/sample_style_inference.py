@@ -25,6 +25,8 @@ DEFAULT_NEGATIVE_PROMPT = (
     "white polished stone, smooth marble finish, smooth clean marble, overbright "
     "highlights, bright specular highlights, high-key lighting, clean bright cheeks, "
     "shiny forehead, shiny nose, shiny lips, "
+    "teeth, visible teeth, carved teeth, open mouth, parted lips, mouth open, "
+    "open-mouthed smile, wide toothy grin, "
     "pupils, irises, colored eyes, catchlights, painted eyes, realistic human eyes, "
     "red or orange light on face, red or orange light on hair, glowing skin, glowing hair, "
     "soft hair strands, realistic hair texture, modern design, modern decorative details, "
