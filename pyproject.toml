@@ -8,6 +8,13 @@ version = "0.1.0"
 requires-python = ">=3.12,<3.13"
 description = "Bootstrap training pipeline for FLUX.2 Klein 4B LoRA experiments."
 
+[project.optional-dependencies]
+face-preprocess = [
+  "insightface==0.7.3",
+  "onnxruntime>=1.20.0",
+  "opencv-python-headless>=4.10.0",
+]
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]

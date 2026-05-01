@@ -47,9 +47,7 @@ def build_split_map(
 ) -> dict[str, list[str]]:
     required = train_count + val_count + test_count
     if len(identities) < required:
-        raise ValueError(
-            f"Need at least {required} eligible identities, found {len(identities)}."
-        )
+        raise ValueError(f"Need at least {required} eligible identities, found {len(identities)}.")
     ordered = sorted(identities)
     random.Random(seed).shuffle(ordered)
     return {
@@ -83,9 +81,7 @@ def available_identities(zip_path: Path, style_slot: str = "makeup_03") -> list[
         names = set(zf.namelist())
     identities: list[str] = []
     for name in sorted(names):
-        if not (
-            name.endswith(f"_{style_slot}.jpg") or name.endswith(f"/{style_slot}.jpg")
-        ):
+        if not (name.endswith(f"_{style_slot}.jpg") or name.endswith(f"/{style_slot}.jpg")):
             continue
         identity = parse_identity_from_name(name)
         if resolve_archive_members(names, identity, style_slot) is not None:

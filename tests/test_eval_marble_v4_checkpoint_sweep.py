@@ -11,9 +11,7 @@ from PIL import Image
 
 def load_sweep_module() -> types.ModuleType:
     script_path = (
-        Path(__file__).resolve().parents[1]
-        / "scripts"
-        / "eval_marble_v4_checkpoint_sweep.py"
+        Path(__file__).resolve().parents[1] / "scripts" / "eval_marble_v4_checkpoint_sweep.py"
     )
     spec = importlib.util.spec_from_file_location("eval_marble_v4_checkpoint_sweep", script_path)
     assert spec is not None

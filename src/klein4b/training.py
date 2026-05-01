@@ -10,10 +10,8 @@ def default_training_template_path() -> Path:
 
 def render_training_config(template_path: Path, dataset_dir: Path, output_dir: Path) -> str:
     template = template_path.read_text(encoding="utf-8")
-    return (
-        template.replace("{{ training_folder }}", str(output_dir)).replace(
-            "{{ dataset_dir }}", str(dataset_dir)
-        )
+    return template.replace("{{ training_folder }}", str(output_dir)).replace(
+        "{{ dataset_dir }}", str(dataset_dir)
     )
 
 
