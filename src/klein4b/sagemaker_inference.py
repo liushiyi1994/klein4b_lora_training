@@ -21,6 +21,7 @@ from klein4b.marble_prompt_planning import (
     plan_prompt_with_openai,
     render_marble_prompt,
 )
+from klein4b.reference_preprocessing import ScrfdFaceDetector, preprocess_reference_image
 from klein4b.sample_style_inference import (
     build_ai_toolkit_command,
     find_latest_sample,
@@ -73,6 +74,8 @@ class SageMakerMarbleModel:
     planner_provider: str
     planner_model: str
     aws_region: str
+    preprocess_reference: bool = False
+    scrfd_model_path: Path | None = None
 
     def build_prediction(
         self,
@@ -128,8 +131,11 @@ def predict_fn(
     output_dir = model.output_root / input_data.request_id
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    reference_path = output_dir / f"reference.{input_data.image_format}"
-    reference_path.write_bytes(input_data.image_bytes)
+    reference_original_path, reference_path, preprocess_metadata_path = _prepare_reference_image(
+        input_data=input_data,
+        model=model,
+        output_dir=output_dir,
+    )
 
     plan_start = time.perf_counter()
     prompt_plan = _plan_prompt(reference_path=reference_path, model=model)
@@ -187,7 +193,10 @@ def predict_fn(
     timing_path.write_text(json.dumps(timings, indent=2) + "\n", encoding="utf-8")
 
     run_config = {
+        "reference_original": str(reference_original_path),
         "reference": str(reference_path),
+        "preprocess_reference": model.preprocess_reference,
+        "preprocess_metadata": _optional_path(preprocess_metadata_path),
         "lora": str(model.lora_path),
         "planner_provider": model.planner_provider,
         "model": model.planner_model,
@@ -288,6 +297,8 @@ def load_model(
         planner_provider=provider,
         planner_model=resolved_model,
         aws_region=region,
+        preprocess_reference=_env_bool("KLEIN4B_PREPROCESS_REFERENCE", default=False),
+        scrfd_model_path=_optional_env_path("KLEIN4B_SCRFD_MODEL_PATH"),
     )
 
 
@@ -328,6 +339,56 @@ def _plan_prompt(reference_path: Path, model: SageMakerMarbleModel) -> object:
             region_name=model.aws_region,
         )
     return plan_prompt_with_openai(reference_path=reference_path, model=model.planner_model)
+
+
+def _prepare_reference_image(
+    *,
+    input_data: SageMakerInferenceRequest,
+    model: SageMakerMarbleModel,
+    output_dir: Path,
+) -> tuple[Path, Path, Path | None]:
+    if not model.preprocess_reference:
+        reference_path = output_dir / f"reference.{input_data.image_format}"
+        reference_path.write_bytes(input_data.image_bytes)
+        return reference_path, reference_path, None
+
+    original_path = output_dir / f"reference_original.{input_data.image_format}"
+    original_path.write_bytes(input_data.image_bytes)
+    detector = _build_reference_detector(model)
+    metadata_path = output_dir / "preprocess_metadata.json"
+    result = preprocess_reference_image(
+        reference_path=original_path,
+        output_path=output_dir / "reference_preprocessed.jpg",
+        metadata_path=metadata_path,
+        detector=detector,
+    )
+    return original_path, result.effective_reference_path, metadata_path
+
+
+def _build_reference_detector(model: SageMakerMarbleModel) -> ScrfdFaceDetector:
+    if model.scrfd_model_path is None:
+        raise ValueError("KLEIN4B_SCRFD_MODEL_PATH is required when KLEIN4B_PREPROCESS_REFERENCE=1")
+    return ScrfdFaceDetector(model.scrfd_model_path)
+
+
+def _optional_path(path: Path | None) -> str | None:
+    if path is None:
+        return None
+    return str(path)
+
+
+def _optional_env_path(name: str) -> Path | None:
+    value = os.environ.get(name)
+    if value is None or not value.strip():
+        return None
+    return Path(value)
+
+
+def _env_bool(name: str, *, default: bool) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _run_ai_toolkit_generation(

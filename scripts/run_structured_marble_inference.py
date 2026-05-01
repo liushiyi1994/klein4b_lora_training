@@ -19,6 +19,10 @@ from klein4b.marble_prompt_planning import (  # noqa: E402
     plan_prompt_with_openai,
     render_marble_prompt,
 )
+from klein4b.reference_preprocessing import (  # noqa: E402
+    ScrfdFaceDetector,
+    preprocess_reference_image,
+)
 from klein4b.sample_style_inference import (  # noqa: E402
     DEFAULT_BEST_LORA_PATH,
     build_ai_toolkit_command,
@@ -52,6 +56,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--skip-openai", action="store_true")
     parser.add_argument("--no-run-ai-toolkit", action="store_true")
     parser.add_argument("--ai-toolkit-dir", type=Path, default=REPO_ROOT / "vendor" / "ai-toolkit")
+    parser.add_argument(
+        "--preprocess-reference",
+        action="store_true",
+        help="Run SCRFD loose face crop before prompt planning and AI Toolkit sampling.",
+    )
+    parser.add_argument(
+        "--scrfd-model",
+        type=Path,
+        default=os.environ.get("KLEIN4B_SCRFD_MODEL_PATH"),
+        help="Path to caller-supplied SCRFD ONNX detector weights.",
+    )
     return parser
 
 
@@ -63,6 +78,7 @@ def main(argv: list[str] | None = None) -> None:
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     planner_model = _resolve_planner_model(args.planner_provider, args.model)
+    reference_path = _resolve_effective_reference_path(args)
 
     if args.skip_openai:
         prompt_plan_payload = json.loads(args.prompt_plan_json.read_text(encoding="utf-8"))
@@ -70,14 +86,14 @@ def main(argv: list[str] | None = None) -> None:
         used_openai = False
     elif args.planner_provider == "bedrock-nova":
         prompt_plan = plan_prompt_with_bedrock_nova(
-            reference_path=args.reference,
+            reference_path=reference_path,
             model=planner_model,
             region_name=args.aws_region,
         )
         prompt_plan_payload = _prompt_plan_to_payload(prompt_plan)
         used_openai = False
     else:
-        prompt_plan = plan_prompt_with_openai(reference_path=args.reference, model=planner_model)
+        prompt_plan = plan_prompt_with_openai(reference_path=reference_path, model=planner_model)
         prompt_plan_payload = _prompt_plan_to_payload(prompt_plan)
         used_openai = True
 
@@ -93,7 +109,7 @@ def main(argv: list[str] | None = None) -> None:
         render_sample_style_config(
             name=CONFIG_NAME,
             training_folder=args.output_dir,
-            reference_path=args.reference,
+            reference_path=reference_path,
             prompt=prompt,
             lora_path=args.lora,
             negative_prompt_additions=negative_prompt_additions_for_eye_state(
@@ -113,7 +129,12 @@ def main(argv: list[str] | None = None) -> None:
 
     run_config_path = args.output_dir / "run_config.json"
     run_config = {
-        "reference": str(args.reference),
+        "reference_original": str(args.reference),
+        "reference": str(reference_path),
+        "preprocess_reference": args.preprocess_reference,
+        "preprocess_metadata": _optional_path(
+            args.output_dir / "preprocess_metadata.json" if args.preprocess_reference else None
+        ),
         "pseudo_target": _optional_path(args.pseudo_target),
         "pseudo_target_role": "comparison-only",
         "previous_best": _optional_path(args.previous_best),
@@ -134,7 +155,7 @@ def main(argv: list[str] | None = None) -> None:
 
     make_comparison_contact_sheet(
         output_path=args.output_dir / "contact_sheet.jpg",
-        reference_path=args.reference,
+        reference_path=reference_path,
         pseudo_target_path=args.pseudo_target,
         previous_best_path=args.previous_best,
         generated_path=generated_path,
@@ -145,6 +166,21 @@ def _optional_path(path: Path | None) -> str | None:
     if path is None:
         return None
     return str(path)
+
+
+def _resolve_effective_reference_path(args: argparse.Namespace) -> Path:
+    if not args.preprocess_reference:
+        return args.reference
+    if args.scrfd_model is None:
+        raise ValueError("--scrfd-model is required with --preprocess-reference")
+    detector = ScrfdFaceDetector(model_path=Path(args.scrfd_model))
+    result = preprocess_reference_image(
+        reference_path=args.reference,
+        output_path=args.output_dir / "reference_preprocessed.jpg",
+        metadata_path=args.output_dir / "preprocess_metadata.json",
+        detector=detector,
+    )
+    return result.effective_reference_path
 
 
 def _resolve_planner_model(planner_provider: str, model: str | None) -> str:

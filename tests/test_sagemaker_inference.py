@@ -193,6 +193,101 @@ def test_predict_fn_writes_artifacts_and_returns_json_ready_prediction(
     assert base64.b64decode(response["image_base64"]) == prediction.image_bytes
 
 
+def test_predict_fn_uses_preprocessed_reference_when_configured(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    model = SageMakerMarbleModel(
+        output_root=tmp_path / "outputs",
+        lora_path=tmp_path / "weights.safetensors",
+        ai_toolkit_dir=tmp_path / "ai-toolkit",
+        planner_provider="bedrock-nova",
+        planner_model="us.amazon.nova-2-lite-v1:0",
+        aws_region="us-east-2",
+        preprocess_reference=True,
+        scrfd_model_path=tmp_path / "det.onnx",
+    )
+    model.lora_path.write_bytes(b"fake-weights")
+    model.scrfd_model_path.write_bytes(b"fake-detector")
+    model.ai_toolkit_dir.mkdir()
+    plan_calls: list[dict[str, object]] = []
+    preprocess_calls: list[dict[str, object]] = []
+
+    def fake_preprocess_reference(**kwargs: object) -> object:
+        preprocess_calls.append(dict(kwargs))
+        effective_reference = kwargs["output_path"]
+        assert isinstance(effective_reference, Path)
+        Image.new("RGB", (9, 12), "orange").save(effective_reference)
+
+        class Result:
+            effective_reference_path = effective_reference
+            metadata = {"enabled": True}
+
+        return Result()
+
+    def fake_plan(**kwargs: object) -> object:
+        plan_calls.append(dict(kwargs))
+        return parse_prompt_plan(VALID_PLAN)
+
+    def fake_generation(**kwargs: object) -> GenerationResult:
+        output_dir = kwargs["output_dir"]
+        assert isinstance(output_dir, Path)
+        samples_dir = output_dir / "structured_marble_inference" / "samples"
+        samples_dir.mkdir(parents=True)
+        generated = samples_dir / "sample.jpg"
+        Image.new("RGB", (12, 16), "purple").save(generated)
+        return GenerationResult(
+            generated_path=generated,
+            wall_seconds=4.5,
+            sampler_seconds=None,
+            log_path=output_dir / "ai_toolkit.log",
+        )
+
+    monkeypatch.setattr(
+        "klein4b.sagemaker_inference.preprocess_reference_image", fake_preprocess_reference
+    )
+    monkeypatch.setattr("klein4b.sagemaker_inference.plan_prompt_with_bedrock_nova", fake_plan)
+    monkeypatch.setattr(
+        "klein4b.sagemaker_inference._run_ai_toolkit_generation",
+        fake_generation,
+    )
+
+    request = input_fn(
+        json.dumps(
+            {
+                "request_id": "preprocess-case",
+                "image_base64": base64.b64encode(png_bytes()).decode("ascii"),
+            }
+        ).encode("utf-8"),
+        "application/json",
+    )
+
+    predict_fn(request, model)
+
+    output_dir = model.output_root / "preprocess-case"
+    effective_reference = output_dir / "reference_preprocessed.jpg"
+    run_config = json.loads((output_dir / "run_config.json").read_text(encoding="utf-8"))
+    sample_config = yaml.safe_load(
+        (output_dir / "sample_style_inference.yaml").read_text(encoding="utf-8")
+    )
+
+    assert preprocess_calls == [
+        {
+            "reference_path": output_dir / "reference_original.png",
+            "output_path": effective_reference,
+            "metadata_path": output_dir / "preprocess_metadata.json",
+            "detector": preprocess_calls[0]["detector"],
+        }
+    ]
+    assert plan_calls[0]["reference_path"] == effective_reference
+    assert run_config["reference_original"] == str(output_dir / "reference_original.png")
+    assert run_config["reference"] == str(effective_reference)
+    assert run_config["preprocess_reference"] is True
+    assert sample_config["config"]["process"][0]["sample"]["samples"][0]["ctrl_img_1"] == str(
+        effective_reference
+    )
+
+
 def test_output_fn_can_return_raw_jpeg(tmp_path: Path) -> None:
     model = SageMakerMarbleModel(
         output_root=tmp_path,

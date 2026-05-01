@@ -218,6 +218,68 @@ def test_cli_can_plan_with_bedrock_nova_provider(
     assert run_config["used_openai"] is False
 
 
+def test_cli_can_preprocess_reference_before_planning_and_sampling(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = load_cli_module()
+    reference = tmp_path / "selfie.png"
+    prompt_plan_json = tmp_path / "plan.json"
+    output_dir = tmp_path / "out"
+    Image.new("RGB", (12, 16), "red").save(reference)
+    prompt_plan_json.write_text(json.dumps(VALID_PLAN), encoding="utf-8")
+    preprocess_calls: list[dict[str, object]] = []
+
+    def fake_preprocess_reference(**kwargs: object) -> object:
+        preprocess_calls.append(dict(kwargs))
+        effective_reference = output_dir / "reference_preprocessed.jpg"
+        Image.new("RGB", (9, 12), "orange").save(effective_reference)
+
+        class Result:
+            effective_reference_path = effective_reference
+            metadata = {"enabled": True}
+
+        return Result()
+
+    monkeypatch.setattr(module, "preprocess_reference_image", fake_preprocess_reference)
+
+    module.main(
+        [
+            "--reference",
+            str(reference),
+            "--prompt-plan-json",
+            str(prompt_plan_json),
+            "--skip-openai",
+            "--no-run-ai-toolkit",
+            "--output-dir",
+            str(output_dir),
+            "--preprocess-reference",
+            "--scrfd-model",
+            str(tmp_path / "det.onnx"),
+        ]
+    )
+
+    run_config = json.loads((output_dir / "run_config.json").read_text(encoding="utf-8"))
+    sample_config = yaml.safe_load(
+        (output_dir / "sample_style_inference.yaml").read_text(encoding="utf-8")
+    )
+
+    assert preprocess_calls == [
+        {
+            "reference_path": reference,
+            "output_path": output_dir / "reference_preprocessed.jpg",
+            "metadata_path": output_dir / "preprocess_metadata.json",
+            "detector": preprocess_calls[0]["detector"],
+        }
+    ]
+    assert run_config["reference_original"] == str(reference)
+    assert run_config["reference"] == str(output_dir / "reference_preprocessed.jpg")
+    assert run_config["preprocess_reference"] is True
+    assert sample_config["config"]["process"][0]["sample"]["samples"][0]["ctrl_img_1"] == str(
+        output_dir / "reference_preprocessed.jpg"
+    )
+
+
 def test_cli_rejects_skip_openai_without_prompt_plan_json(
     monkeypatch,
     tmp_path: Path,

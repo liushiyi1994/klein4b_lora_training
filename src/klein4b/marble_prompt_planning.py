@@ -58,6 +58,9 @@ SUPPRESSED_SELFIE_ARTIFACT_TERMS = (
     "colored lip",
     "complexion",
     "earbud",
+    "earmuff",
+    "earpiece",
+    "earphone",
     "eyeglass",
     "eyeliner",
     "eyewear",
@@ -65,6 +68,8 @@ SUPPRESSED_SELFIE_ARTIFACT_TERMS = (
     "hair accessory",
     "hand gesture",
     "headband",
+    "headphone",
+    "headset",
     "jacket",
     "jewelry",
     "laugh",
@@ -82,6 +87,8 @@ SUPPRESSED_SELFIE_ARTIFACT_TERMS = (
     "skin texture",
     "smile",
     "smiling",
+    "spectacle",
+    "sunglasses",
     "t-shirt",
     "teeth",
     "thumbs up",
@@ -207,6 +214,15 @@ FIXED_PROMPT_CONSTRAINTS = (
     "and omit hand gestures. Avoid modern design, modern decorative details, "
     "contemporary ornamentation, modern accessories, modern clothing, duplicate "
     "figures, side-by-side views, and collage."
+)
+
+MODERN_ACCESSORY_REMOVAL_POLICY = (
+    "Ignore and omit visible eyeglasses, sunglasses, spectacles, headphones, "
+    "headsets, earbuds, earmuffs, earpieces, microphones, wires, cords, and other "
+    "modern wearable accessories from the reference; do not carve frames, lenses, "
+    "rims, arms over the temples, ear cups, headbands, or wires; restore "
+    "unobstructed carved brow, eyes, temples, cheekbones, hair, and uncovered ears "
+    "as marble anatomy."
 )
 
 NO_ORNAMENT_POLICY = (
@@ -472,6 +488,7 @@ def render_marble_prompt(plan: PromptPlan) -> str:
 
     return (
         "Change image 1 into a <mrblbust> from the reference portrait, "
+        f"{MODERN_ACCESSORY_REMOVAL_POLICY} "
         f"preserving {_join_phrases(reference_parts)}. "
         f"The output should be a {_join_phrases(target_parts)}, "
         f"{_render_eye_policy(reference.eye_state)} "

@@ -347,21 +347,64 @@ def test_render_marble_prompt_suppresses_selfie_artifact_details() -> None:
     plan = parse_prompt_plan(payload)
 
     prompt = render_marble_prompt(plan)
+    preserving_clause = prompt.split(". The output should", 1)[0].rsplit(" preserving ", 1)[1]
 
     assert "rounded cheeks" in prompt
     assert "short wavy hair" in prompt
     assert "subtle closed-mouth carved smile" in prompt
-    assert "eyeliner" not in prompt
-    assert "upper teeth" not in prompt
-    assert "complexion" not in prompt
-    assert "yellow" not in prompt
-    assert "yellow headband" not in prompt
-    assert "bow" not in prompt
-    assert "decorative circlet" not in prompt
-    assert "small tiara" not in prompt
-    assert "eyeglass" not in prompt
-    assert "open-mouthed" not in prompt
-    assert "visible upper teeth" not in prompt
+    assert "eyeliner" not in preserving_clause
+    assert "upper teeth" not in preserving_clause
+    assert "complexion" not in preserving_clause
+    assert "yellow" not in preserving_clause
+    assert "yellow headband" not in preserving_clause
+    assert "bow" not in preserving_clause
+    assert "decorative circlet" not in preserving_clause
+    assert "small tiara" not in preserving_clause
+    assert "eyeglass" not in preserving_clause
+    assert "open-mouthed" not in preserving_clause
+    assert "visible upper teeth" not in preserving_clause
+
+
+def test_render_marble_prompt_suppresses_wearable_face_audio_accessories() -> None:
+    payload = {
+        **VALID_PLAN,
+        "reference_identity": {
+            **VALID_PLAN["reference_identity"],
+            "face_structure": [
+                "angular jawline",
+                "deep-set eyes behind sunglasses",
+                "oval spectacles around the eyes",
+            ],
+            "hair_or_headwear": [
+                "short curly hair",
+                "large headphones over both ears",
+                "round earmuffs covering the ears",
+                "thin headset band over the crown",
+                "small earpiece in the left ear",
+            ],
+        },
+    }
+    plan = parse_prompt_plan(payload)
+
+    prompt = render_marble_prompt(plan)
+    preserving_clause = prompt.split(". The output should", 1)[0].rsplit(" preserving ", 1)[1]
+
+    assert "angular jawline" in preserving_clause
+    assert "short curly hair" in preserving_clause
+    assert "sunglasses" not in preserving_clause
+    assert "spectacles" not in preserving_clause
+    assert "headphones" not in preserving_clause
+    assert "earmuffs" not in preserving_clause
+    assert "headset" not in preserving_clause
+    assert "earpiece" not in preserving_clause
+
+
+def test_render_marble_prompt_tells_model_to_remove_visible_modern_accessories() -> None:
+    prompt = render_marble_prompt(parse_prompt_plan(VALID_PLAN))
+
+    assert "Ignore and omit visible eyeglasses" in prompt
+    assert "headphones" in prompt
+    assert "uncovered ears" in prompt
 
 
 def test_render_marble_prompt_forces_closed_mouth_without_teeth() -> None:

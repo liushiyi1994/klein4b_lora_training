@@ -66,6 +66,11 @@ def test_render_sample_style_config_uses_best_klein_settings(tmp_path: Path) -> 
     assert "teeth" in sample["neg"]
     assert "open mouth" in sample["neg"]
     assert "parted lips" in sample["neg"]
+    assert "eyeglasses" in sample["neg"]
+    assert "sunglasses" in sample["neg"]
+    assert "headphones" in sample["neg"]
+    assert "earmuffs" in sample["neg"]
+    assert "headset" in sample["neg"]
 
 
 def test_render_sample_style_config_can_add_conditional_negative_terms(tmp_path: Path) -> None:
