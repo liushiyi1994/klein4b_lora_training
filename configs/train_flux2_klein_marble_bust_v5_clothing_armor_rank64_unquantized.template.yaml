@@ -1,0 +1,71 @@
+job: extension
+config:
+  name: marble_bust_v5_clothing_armor_rank64_unquantized_style
+  process:
+    - type: diffusion_trainer
+      training_folder: "{{ training_folder }}"
+      device: "cuda"
+      trigger_word: "<mrblbust>"
+      network:
+        type: "lora"
+        linear: 64
+        linear_alpha: 64
+        conv: 32
+        conv_alpha: 32
+      save:
+        dtype: "bf16"
+        save_every: 200
+        max_step_saves_to_keep: 50
+      datasets:
+        - folder_path: "data/marble-bust-data/v5_new/bust_img"
+          control_path_1: "data/marble-bust-data/v5_new/ref_input"
+          caption_ext: "txt"
+          cache_latents_to_disk: true
+          resolution:
+            - 768
+      train:
+        batch_size: 1
+        steps: 10000
+        gradient_accumulation_steps: 1
+        train_unet: true
+        train_text_encoder: false
+        gradient_checkpointing: true
+        lr: 0.00006
+        noise_scheduler: "flowmatch"
+        optimizer: "adamw8bit"
+        skip_first_sample: true
+        timestep_type: "weighted"
+        content_or_style: "balanced"
+        dtype: "bf16"
+        unload_text_encoder: false
+      model:
+        arch: "flux2_klein_4b"
+        name_or_path: "black-forest-labs/FLUX.2-klein-base-4B"
+        quantize: false
+        quantize_te: false
+        low_vram: true
+        model_kwargs:
+          match_target_res: false
+      sample:
+        sampler: "flowmatch"
+        sample_every: 500
+        width: 768
+        height: 1024
+        samples:
+          - prompt: "Change image 1 into a <mrblbust> child Greek marble statue bust; preserve the rounded child face, small nose, full cheeks, compact jaw, and puffed hair silhouette; add a tall carved crested headpiece, patterned cuirass, rounded shoulder armor, diagonal drapery straps, blank sculpted eyes, matte weathered dark grey stone, grime, chipped shoulders, broken lower bust, localized lava only in lower cracks, dark ember background"
+            ctrl_img_1: "data/marble-bust-data/v5_new/ref_input/african_child_female_1.png"
+          - prompt: "Change image 1 into a <mrblbust> middle-aged male Greek marble statue bust; preserve the long face, straight nose, firm mouth, lean jaw, side-facing gaze, and formal headwear silhouette translated into classical armor; add a tall crested helmet, cheek guards, layered cloak, breastplate edge, blank sculpted eyes, matte weathered grey-brown stone, grime, chipped shoulder plates, broken lower bust, localized lava only in lower cracks, dark ember background"
+            ctrl_img_1: "data/marble-bust-data/v5_new/ref_input/eastasian_middleaged_male_1.png"
+          - prompt: "Change image 1 into a <mrblbust> elderly Greek marble statue bust; preserve the long face, prominent nose, tight mouth, cheek planes, side-facing head angle, and wrapped head covering silhouette translated into carved wreath and cloth; add diagonal cloak drapery, exposed shoulder, narrow chest bands, blank sculpted eyes, matte weathered grey stone, grime, chipped shoulder structure, broken lower bust, localized lava only in lower cracks, dark ember background"
+            ctrl_img_1: "data/marble-bust-data/v5_new/ref_input/hispaniclatino_elderly_neutral_1.png"
+          - prompt: "Change image 1 into a <mrblbust> young adult female Greek marble statue bust; preserve the oval face, straight nose, soft lips, narrow chin, centered gaze, and wavy hair volume; add a tall fan-crested helmet, cheek guards, curled carved hair, rounded shoulder armor, smooth breastplate, cloak edge, blank sculpted eyes, matte weathered grey stone, grime, chipped shoulders, broken lower bust, localized lava only in lower cracks, dark ember background"
+            ctrl_img_1: "data/marble-bust-data/v5_new/ref_input/middleeastern_youngadult_female_2.png"
+          - prompt: "Change image 1 into a <mrblbust> middle-aged armored Greek marble statue bust; preserve the oval face, straight nose, firm mouth, smooth jaw, side-parted hair, and formal pose; add a tall crested helmet, cheek guards, layered cloak, ornamented breastplate, round shoulder armor, blank sculpted eyes, matte weathered grey stone, grime, chipped shoulder plates, broken lower bust, localized lava only in lower cracks, dark ember background"
+            ctrl_img_1: "data/marble-bust-data/v5_new/ref_input/southasian_middleaged_neutral_3.png"
+        neg: "head-only crop, close-up face, cropped shoulders, cropped torso, loose rocks, separate rock pile, rock pedestal, debris below bust, flat plinth, individual hair strands, natural hair color, glossy hair, polished marble, wet shine, specular hotspots, frontal studio light, head-on key light, beauty lighting, perfect portrait lighting, head-on beauty lighting, spotlight on face, smooth porcelain face, overexposed white face, clean bright cheeks, shiny forehead, shiny nose, shiny lips, red or orange light on face, red or orange light on hair, glowing skin, glowing hair, soft hair strands, realistic hair texture, modern eyewear, modern accessories, duplicate figures, side-by-side views, collage"
+        seed: 7
+        guidance_scale: 2.5
+        sample_steps: 24
+meta:
+  name: "marble_bust_v5_clothing_armor_rank64_unquantized_style"
+  version: "5.0-unquantized"

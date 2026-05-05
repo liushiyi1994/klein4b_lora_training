@@ -171,6 +171,53 @@ def test_render_training_config_sets_marble_v4_weathered_face_defaults(
     assert str(output_dir) in config_text
 
 
+def test_render_training_config_sets_marble_v5_clothing_armor_defaults(
+    tmp_path: Path,
+) -> None:
+    dataset_dir = tmp_path / "ignored_for_paired_v5"
+    dataset_dir.mkdir()
+    output_dir = tmp_path / "outputs"
+    output_dir.mkdir()
+    template_path = (
+        Path(__file__).resolve().parents[1]
+        / "configs"
+        / "train_flux2_klein_marble_bust_v5_clothing_armor_rank64_unquantized.template.yaml"
+    )
+
+    config_text = render_training_config(
+        template_path=template_path,
+        dataset_dir=dataset_dir,
+        output_dir=output_dir,
+    )
+
+    assert 'trigger_word: "<mrblbust>"' in config_text
+    assert "marble_bust_v5_clothing_armor_rank64_unquantized_style" in config_text
+    assert 'folder_path: "data/marble-bust-data/v5_new/bust_img"' in config_text
+    assert 'control_path_1: "data/marble-bust-data/v5_new/ref_input"' in config_text
+    assert "steps: 10000" in config_text
+    assert "save_every: 200" in config_text
+    assert "max_step_saves_to_keep: 50" in config_text
+    assert "linear: 64" in config_text
+    assert "conv: 32" in config_text
+    assert "lr: 0.00006" in config_text
+    assert "skip_first_sample: true" in config_text
+    assert "train_text_encoder: false" in config_text
+    assert "quantize: false" in config_text
+    assert "quantize_te: false" in config_text
+    assert "width: 768" in config_text
+    assert "height: 1024" in config_text
+    assert "guidance_scale: 2.5" in config_text
+    assert "sample_steps: 24" in config_text
+    assert "african_child_female_1.png" in config_text
+    assert "eastasian_middleaged_male_1.png" in config_text
+    assert "hispaniclatino_elderly_neutral_1.png" in config_text
+    assert "middleeastern_youngadult_female_2.png" in config_text
+    assert "southasian_middleaged_neutral_3.png" in config_text
+    assert "head-only crop" in config_text
+    assert "modern accessories" in config_text
+    assert str(output_dir) in config_text
+
+
 def test_build_training_command_points_to_ai_toolkit_run_py() -> None:
     command = build_training_command(
         Path("vendor/ai-toolkit"),
