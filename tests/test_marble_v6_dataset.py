@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -7,11 +8,11 @@ import pytest
 from klein4b.marble_v6_dataset import (
     ArchetypePair,
     CaptionParseError,
+    build_v6_199_dataset,
     parse_v6_source_caption,
     render_archetype_details,
     render_v6_caption,
 )
-
 
 SOURCE_CAPTION_001 = (
     "Convert this portrait into a CSTALE marble bust of an African child female \u2014 "
@@ -59,9 +60,7 @@ def test_parse_v6_source_caption_handles_bare_rows_without_helmet_sentence() -> 
 
 
 def test_render_archetype_details_uses_prose_only_and_no_raw_tokens() -> None:
-    details = render_archetype_details(
-        ArchetypePair(helmet="ctWinged", garment="ctOrnateCuirass")
-    )
+    details = render_archetype_details(ArchetypePair(helmet="ctWinged", garment="ctOrnateCuirass"))
 
     assert "ctWinged" not in details
     assert "ctOrnateCuirass" not in details
@@ -71,9 +70,7 @@ def test_render_archetype_details_uses_prose_only_and_no_raw_tokens() -> None:
 
 
 def test_render_archetype_details_for_bare_head_omits_helmet_phrase() -> None:
-    details = render_archetype_details(
-        ArchetypePair(helmet="ctBare", garment="ctWarriorCuirass")
-    )
+    details = render_archetype_details(ArchetypePair(helmet="ctBare", garment="ctWarriorCuirass"))
 
     assert "helmet" not in details
     assert "bare" not in details.lower()
@@ -108,3 +105,133 @@ def test_render_v6_caption_raises_clear_error_for_unknown_archetype() -> None:
 def test_parse_v6_source_caption_raises_clear_error_for_unexpected_shape() -> None:
     with pytest.raises(CaptionParseError, match="expected caption prefix"):
         parse_v6_source_caption("not a valid source caption")
+
+
+def write_fake_v6_source(root: Path) -> None:
+    control_dir = root / "editing-dataset-control" / "control"
+    dataset_dir = root / "editing-dataset-control" / "dataset"
+    control_dir.mkdir(parents=True)
+    dataset_dir.mkdir(parents=True)
+    for index, caption in {"001": SOURCE_CAPTION_001, "002": SOURCE_CAPTION_BARE}.items():
+        (control_dir / f"{index}.png").write_bytes(f"control-{index}".encode("ascii"))
+        (dataset_dir / f"{index}.png").write_bytes(f"bust-{index}".encode("ascii"))
+        (dataset_dir / f"{index}.txt").write_text(caption, encoding="utf-8")
+
+    editing_manifest_dir = root / "editing-dataset"
+    editing_manifest_dir.mkdir()
+    (editing_manifest_dir / "manifest.json").write_text(
+        json.dumps(
+            [
+                {
+                    "index": "001",
+                    "source_id": "african_child_female_1",
+                    "clothing_slug": "marble_mars_winged_helmet_gorgoneion_cuirass",
+                    "prompt": SOURCE_CAPTION_001,
+                },
+                {
+                    "index": "002",
+                    "source_id": "european_youngadult_neutral_1",
+                    "clothing_slug": "bronze_muscled_cuirass_anatomical",
+                    "prompt": SOURCE_CAPTION_BARE,
+                },
+            ],
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+
+def write_fake_archetypes(target: Path) -> None:
+    target.mkdir(parents=True)
+    (target / "archetypes.json").write_text(
+        json.dumps(
+            {
+                "bronze_muscled_cuirass_anatomical": ["ctBare", "ctWarriorCuirass"],
+                "marble_mars_winged_helmet_gorgoneion_cuirass": [
+                    "ctWinged",
+                    "ctOrnateCuirass",
+                ],
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def test_build_v6_199_dataset_copies_pairs_and_rewrites_captions(tmp_path: Path) -> None:
+    source = tmp_path / "remote" / "data-synthesis"
+    target = tmp_path / "v6_199"
+    write_fake_v6_source(source)
+    write_fake_archetypes(target)
+
+    report = build_v6_199_dataset(source_dir=source, target_dir=target, expected_count=2)
+
+    assert report.row_count == 2
+    assert (target / "control" / "001.png").read_bytes() == b"control-001"
+    assert (target / "dataset" / "001.png").read_bytes() == b"bust-001"
+    caption_001 = (target / "dataset" / "001.txt").read_text(encoding="utf-8")
+    caption_002 = (target / "dataset" / "002.txt").read_text(encoding="utf-8")
+    assert "preserving an African child female" in caption_001
+    assert "winged helmet with a tall crest" in caption_001
+    assert "ctWinged" not in caption_001
+    assert "European young-adult gender-neutral person" in caption_002
+    assert "helmet" not in caption_002.split("warrior cuirass", 1)[0]
+    assert (target / "archetypes.json").exists()
+    assert (target / "manifest.json").exists()
+    assert (target / "CAPTION_REPORT.md").exists()
+
+
+def test_build_v6_199_dataset_writes_manifest_with_archetype_metadata(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "remote" / "data-synthesis"
+    target = tmp_path / "v6_199"
+    write_fake_v6_source(source)
+    write_fake_archetypes(target)
+
+    build_v6_199_dataset(source_dir=source, target_dir=target, expected_count=2)
+
+    manifest = json.loads((target / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest[0]["index"] == "001"
+    assert manifest[0]["source_id"] == "african_child_female_1"
+    assert manifest[0]["clothing_slug"] == "marble_mars_winged_helmet_gorgoneion_cuirass"
+    assert manifest[0]["helmet_archetype"] == "ctWinged"
+    assert manifest[0]["garment_archetype"] == "ctOrnateCuirass"
+    assert manifest[0]["target_caption_path"].endswith("dataset/001.txt")
+    assert "rewritten_caption" in manifest[0]
+
+
+def test_build_v6_199_dataset_preserves_existing_archetypes_file(tmp_path: Path) -> None:
+    source = tmp_path / "remote" / "data-synthesis"
+    target = tmp_path / "v6_199"
+    write_fake_v6_source(source)
+    write_fake_archetypes(target)
+    original_archetypes = (target / "archetypes.json").read_text(encoding="utf-8")
+
+    build_v6_199_dataset(source_dir=source, target_dir=target, expected_count=2)
+
+    assert (target / "archetypes.json").read_text(encoding="utf-8") == original_archetypes
+
+
+def test_build_v6_199_dataset_fails_when_archetype_mapping_is_missing(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "remote" / "data-synthesis"
+    target = tmp_path / "v6_199"
+    write_fake_v6_source(source)
+    target.mkdir(parents=True)
+    (target / "archetypes.json").write_text("{}", encoding="utf-8")
+
+    with pytest.raises(KeyError, match="missing archetype mapping"):
+        build_v6_199_dataset(source_dir=source, target_dir=target, expected_count=2)
+
+
+def test_build_v6_199_dataset_fails_when_expected_count_differs(tmp_path: Path) -> None:
+    source = tmp_path / "remote" / "data-synthesis"
+    target = tmp_path / "v6_199"
+    write_fake_v6_source(source)
+    write_fake_archetypes(target)
+
+    with pytest.raises(ValueError, match="expected 199 rows, found 2"):
+        build_v6_199_dataset(source_dir=source, target_dir=target, expected_count=199)
