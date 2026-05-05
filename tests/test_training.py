@@ -218,6 +218,51 @@ def test_render_training_config_sets_marble_v5_clothing_armor_defaults(
     assert str(output_dir) in config_text
 
 
+def test_render_training_config_sets_marble_v6_199_rank96_defaults(
+    tmp_path: Path,
+) -> None:
+    dataset_dir = tmp_path / "ignored_for_paired_v6"
+    dataset_dir.mkdir()
+    output_dir = tmp_path / "outputs"
+    output_dir.mkdir()
+    template_path = (
+        Path(__file__).resolve().parents[1]
+        / "configs"
+        / "train_flux2_klein_marble_bust_v6_199_rank96_unquantized.template.yaml"
+    )
+
+    config_text = render_training_config(
+        template_path=template_path,
+        dataset_dir=dataset_dir,
+        output_dir=output_dir,
+    )
+
+    assert 'trigger_word: "<mrblbust>"' in config_text
+    assert "marble_bust_v6_199_rank96_unquantized_style" in config_text
+    assert 'folder_path: "data/marble-bust-data/v6_199/dataset"' in config_text
+    assert 'control_path_1: "data/marble-bust-data/v6_199/control"' in config_text
+    assert "steps: 16000" in config_text
+    assert "save_every: 400" in config_text
+    assert "sample_every: 400" in config_text
+    assert "max_step_saves_to_keep: 50" in config_text
+    assert "linear: 96" in config_text
+    assert "linear_alpha: 96" in config_text
+    assert "conv: 48" in config_text
+    assert "conv_alpha: 48" in config_text
+    assert "lr: 0.00005" in config_text
+    assert "train_text_encoder: false" in config_text
+    assert "quantize: false" in config_text
+    assert "quantize_te: false" in config_text
+    assert "guidance_scale: 2.5" in config_text
+    assert "sample_steps: 24" in config_text
+    assert "data/marble-bust-data/v6_199/control/001.png" in config_text
+    assert "data/marble-bust-data/v6_199/control/100.png" in config_text
+    assert "data/marble-bust-data/v6_199/control/199.png" in config_text
+    assert "winged helmet with a tall crest" in config_text
+    assert "carved Corinthian helmet with cheek guards" in config_text
+    assert str(output_dir) in config_text
+
+
 def test_build_training_command_points_to_ai_toolkit_run_py() -> None:
     command = build_training_command(
         Path("vendor/ai-toolkit"),

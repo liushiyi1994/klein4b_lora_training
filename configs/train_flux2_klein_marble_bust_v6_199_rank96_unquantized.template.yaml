@@ -1,0 +1,75 @@
+job: extension
+config:
+  name: marble_bust_v6_199_rank96_unquantized_style
+  process:
+    - type: diffusion_trainer
+      training_folder: "{{ training_folder }}"
+      device: "cuda"
+      trigger_word: "<mrblbust>"
+      network:
+        type: "lora"
+        linear: 96
+        linear_alpha: 96
+        conv: 48
+        conv_alpha: 48
+      save:
+        dtype: "bf16"
+        save_every: 400
+        max_step_saves_to_keep: 50
+      datasets:
+        - folder_path: "data/marble-bust-data/v6_199/dataset"
+          control_path_1: "data/marble-bust-data/v6_199/control"
+          caption_ext: "txt"
+          cache_latents_to_disk: true
+          resolution:
+            - 768
+      train:
+        batch_size: 1
+        steps: 16000
+        gradient_accumulation_steps: 1
+        train_unet: true
+        train_text_encoder: false
+        gradient_checkpointing: true
+        lr: 0.00005
+        noise_scheduler: "flowmatch"
+        optimizer: "adamw8bit"
+        skip_first_sample: false
+        timestep_type: "weighted"
+        content_or_style: "balanced"
+        dtype: "bf16"
+        unload_text_encoder: false
+      model:
+        arch: "flux2_klein_4b"
+        name_or_path: "black-forest-labs/FLUX.2-klein-base-4B"
+        quantize: false
+        quantize_te: false
+        low_vram: true
+        model_kwargs:
+          match_target_res: false
+      sample:
+        sampler: "flowmatch"
+        sample_every: 400
+        width: 768
+        height: 1024
+        samples:
+          - prompt: "Change image 1 into a <mrblbust> from the reference portrait, preserving an African child female with short coiled hair gathered into two puffs, round face, full cheeks, almond eyes, broad nose with rounded tip, full lips. The target is a Greek marble statue bust with the body in strict left profile; the head is turned back over the left shoulder, chin lifted, with a heroic upward gaze, a serene archaic-smile expression, blank sculpted eyes, winged helmet with a tall crest, raised side wings, and carved brow guard, ornate cuirass with raised chest medallion, shoulder plates, cloak edge, and carved relief trim, matte weathered grey-brown stone, dry chalky unpolished surface, grime in hair grooves, helmet channels, armor relief, robe folds, garment seams, and drapery channels, chipped shoulders, broken lower bust, localized lava only in the lower cracks and fractures, dark ember background, no glossy polished marble, no wet shine, no specular hotspots, no frontal studio light, no head-on beauty lighting, no orange spill on face hair torso or background"
+            ctrl_img_1: "data/marble-bust-data/v6_199/control/001.png"
+          - prompt: "Change image 1 into a <mrblbust> from the reference portrait, preserving an African child female with short coiled hair gathered in braids, oval face, full cheeks, almond eyes, broad nose with a rounded tip, full lips. The target is a Greek marble statue bust with the body in three-quarter view turned to the left; the head is turned back over the right shoulder, with a downcast contemplative gaze, a solemn serious expression, blank sculpted eyes, carved Phrygian helmet with forward-curving cap, folded crown, and side cheek guards, aegis over a chiton with scaled chest panel and layered cloth folds, matte weathered grey-brown stone, dry chalky unpolished surface, grime in hair grooves, helmet channels, armor relief, robe folds, garment seams, and drapery channels, chipped shoulders, broken lower bust, localized lava only in the lower cracks and fractures, dark ember background, no glossy polished marble, no wet shine, no specular hotspots, no frontal studio light, no head-on beauty lighting, no orange spill on face hair torso or background"
+            ctrl_img_1: "data/marble-bust-data/v6_199/control/002.png"
+          - prompt: "Change image 1 into a <mrblbust> from the reference portrait, preserving an African middle-aged male with short hair, wavy texture, swept back from forehead, oval face, flat cheeks, almond eyes, straight nose, medium full lips. The target is a Greek marble statue bust with the body in strict right profile; the head is turned to the left, chin lifted, with a heroic upward gaze, a solemn serious expression, blank sculpted eyes, conical pilos helmet with simple raised rim and smooth carved cap, diagonal himation pinned at one shoulder with broad carved robe folds, matte weathered grey-brown stone, dry chalky unpolished surface, grime in hair grooves, helmet channels, armor relief, robe folds, garment seams, and drapery channels, chipped shoulders, broken lower bust, localized lava only in the lower cracks and fractures, dark ember background, no glossy polished marble, no wet shine, no specular hotspots, no frontal studio light, no head-on beauty lighting, no orange spill on face hair torso or background"
+            ctrl_img_1: "data/marble-bust-data/v6_199/control/020.png"
+          - prompt: "Change image 1 into a <mrblbust> from the reference portrait, preserving an East Asian middle-aged male with oval face, flat cheeks, almond eyes, straight nose, medium lips, defined jaw. The target is a Greek marble statue bust with the body in three-quarter view turned to the left; the head is turned to the left, chin lifted, with a heroic upward gaze, a solemn serious expression, blank sculpted eyes, carved Attic helmet with open face, brow ridge, cheek guards, and shallow crest band, aegis over a chiton with scaled chest panel and layered cloth folds, matte weathered grey-brown stone, dry chalky unpolished surface, grime in hair grooves, helmet channels, armor relief, robe folds, garment seams, and drapery channels, chipped shoulders, broken lower bust, localized lava only in the lower cracks and fractures, dark ember background, no glossy polished marble, no wet shine, no specular hotspots, no frontal studio light, no head-on beauty lighting, no orange spill on face hair torso or background"
+            ctrl_img_1: "data/marble-bust-data/v6_199/control/055.png"
+          - prompt: "Change image 1 into a <mrblbust> from the reference portrait, preserving a European young-adult gender-neutral person with shoulder-length wavy hair loose and flowing, oval face, flat cheeks, almond-shaped eyes, straight nose with refined tip, medium full lips. The target is a Greek marble statue bust with the body in three-quarter view turned to the right; the head is turned back over the right shoulder, with a direct gaze toward the viewer, a serene archaic-smile expression, blank sculpted eyes, warrior cuirass with shoulder plates, diagonal cloak, and carved chest relief, matte weathered grey-brown stone, dry chalky unpolished surface, grime in hair grooves, helmet channels, armor relief, robe folds, garment seams, and drapery channels, chipped shoulders, broken lower bust, localized lava only in the lower cracks and fractures, dark ember background, no glossy polished marble, no wet shine, no specular hotspots, no frontal studio light, no head-on beauty lighting, no orange spill on face hair torso or background"
+            ctrl_img_1: "data/marble-bust-data/v6_199/control/100.png"
+          - prompt: "Change image 1 into a <mrblbust> from the reference portrait, preserving a Middle Eastern elderly gender-neutral person with oval face, lean cheeks, deep-set narrow eyes, aquiline nose, thin lips, prominent brows, defined jaw. The target is a Greek marble statue bust with the body in strict right profile; the head is turned to the left, with a heroic upward gaze, a solemn serious expression, blank sculpted eyes, carved Corinthian helmet with cheek guards, raised brow band, and vertical crest channels, aegis over a peplos with scaled chest panel, broad shoulder drape, and deep robe folds, matte weathered grey-brown stone, dry chalky unpolished surface, grime in hair grooves, helmet channels, armor relief, robe folds, garment seams, and drapery channels, chipped shoulders, broken lower bust, localized lava only in the lower cracks and fractures, dark ember background, no glossy polished marble, no wet shine, no specular hotspots, no frontal studio light, no head-on beauty lighting, no orange spill on face hair torso or background"
+            ctrl_img_1: "data/marble-bust-data/v6_199/control/150.png"
+          - prompt: "Change image 1 into a <mrblbust> from the reference portrait, preserving a South Asian young-adult gender-neutral person with short curly hair loose and falling around the face, oval face, full cheeks, almond-shaped eyes, medium nose with a rounded tip, full lips, defined brows, rounded jaw. The target is a Greek marble statue bust with the body squared toward the viewer; the head is turned back over the left shoulder, chin lifted, with a downcast contemplative gaze, a solemn serious expression, blank sculpted eyes, carved Corinthian helmet with cheek guards, raised brow band, and vertical crest channels, warrior cuirass with shoulder plates, diagonal cloak, and carved chest relief, matte weathered grey-brown stone, dry chalky unpolished surface, grime in hair grooves, helmet channels, armor relief, robe folds, garment seams, and drapery channels, chipped shoulders, broken lower bust, localized lava only in the lower cracks and fractures, dark ember background, no glossy polished marble, no wet shine, no specular hotspots, no frontal studio light, no head-on beauty lighting, no orange spill on face hair torso or background"
+            ctrl_img_1: "data/marble-bust-data/v6_199/control/199.png"
+        neg: "head-only crop, close-up face, cropped shoulders, cropped torso, loose rocks, separate rock pile, rock pedestal, debris below bust, flat plinth, individual hair strands, natural hair color, glossy hair, polished marble, wet shine, specular hotspots, frontal studio light, head-on key light, beauty lighting, perfect portrait lighting, head-on beauty lighting, spotlight on face, smooth porcelain face, overexposed white face, clean bright cheeks, shiny forehead, shiny nose, shiny lips, red or orange light on face, red or orange light on hair, glowing skin, glowing hair, soft hair strands, realistic hair texture, modern eyewear, modern accessories, duplicate figures, side-by-side views, collage"
+        seed: 7
+        guidance_scale: 2.5
+        sample_steps: 24
+meta:
+  name: "marble_bust_v6_199_rank96_unquantized_style"
+  version: "6.0-rank96-unquantized"
