@@ -11,9 +11,7 @@ from PIL import Image
 
 
 def load_baselines_module() -> types.ModuleType:
-    script_path = (
-        Path(__file__).resolve().parents[1] / "scripts" / "eval_marble_model_baselines.py"
-    )
+    script_path = Path(__file__).resolve().parents[1] / "scripts" / "eval_marble_model_baselines.py"
     spec = importlib.util.spec_from_file_location("eval_marble_model_baselines", script_path)
     assert spec is not None
     assert spec.loader is not None

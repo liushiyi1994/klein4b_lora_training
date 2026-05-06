@@ -19,9 +19,7 @@ from klein4b.inference import build_marble_pair_prompt  # noqa: E402
 
 IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp")
 DEFAULT_MODELS = ("flux-dev", "z-image", "qwen-edit")
-DEFAULT_KLEIN_DIR = Path(
-    "outputs/eval/sample_style_unquantized_6500_all_test_img/generated_named"
-)
+DEFAULT_KLEIN_DIR = Path("outputs/eval/sample_style_unquantized_6500_all_test_img/generated_named")
 DEFAULT_NEGATIVE_PROMPT = (
     "head-only crop, close-up face, cropped shoulders, cropped torso, loose rocks, "
     "separate rock pile, rock pedestal, debris below bust, flat plinth, individual "
@@ -175,10 +173,7 @@ def load_prompts(
 ) -> dict[str, str]:
     prompts_dir = output_dir / "prompts"
     prompts_dir.mkdir(parents=True, exist_ok=True)
-    prompts = {
-        identity: load_prompt(identity, prompt_dir, dataset_dir)
-        for identity in ids
-    }
+    prompts = {identity: load_prompt(identity, prompt_dir, dataset_dir) for identity in ids}
     for identity, prompt in prompts.items():
         (prompts_dir / f"{identity}.txt").write_text(prompt, encoding="utf-8")
     return prompts
@@ -415,10 +410,7 @@ def generate_baselines(args: argparse.Namespace) -> None:
         "cpu_offload": args.cpu_offload,
         "negative_prompt": negative_prompt,
         "generated": {
-            model: {
-                identity: str(path)
-                for identity, path in paths.items()
-            }
+            model: {identity: str(path) for identity, path in paths.items()}
             for model, paths in generated.items()
         },
         "elapsed_seconds": elapsed,
