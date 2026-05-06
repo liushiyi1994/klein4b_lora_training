@@ -39,7 +39,8 @@ HELMET_DETAIL_PHRASES: dict[str, str | None] = {
         "carved Corinthian helmet with cheek guards, raised brow band, and vertical crest channels"
     ),
     "ctAttic": (
-        "carved Attic helmet with open face, brow ridge, cheek guards, and shallow crest band"
+        "tall crested Attic Athena helmet with raised horsehair crest, open face, "
+        "brow ridge, cheek guards, shallow crest band, and laurel relief"
     ),
     "ctPhrygian": (
         "carved Phrygian helmet with forward-curving cap, folded crown, and side cheek guards"
@@ -55,6 +56,20 @@ HELMET_DETAIL_PHRASES: dict[str, str | None] = {
     "ctTopknotBaldric": "topknot bound with a carved fillet and clean hair bands",
     "ctStephane": "stephane diadem above the brow with a smooth raised crown band",
     "ctBare": None,
+}
+SLUG_HELMET_DETAIL_PHRASES: dict[str, str] = {
+    "bronze_athena_corinthian_pushed_up": (
+        "pushed-up Corinthian Athena helmet with a smooth helmet bowl raised above the brow, "
+        "open face, visor-like raised brow band, cheek guards lifted beside the temples, "
+        "and a broad rear fan-shaped horsehair crest attached behind the helmet with vertical "
+        "plume ridges, no separate animal statue or freestanding finial on top"
+    ),
+    "bronze_chalcidian_helmet_figural_cheek": (
+        "smooth close-fitting Chalcidian helmet cap with rounded skull bowl, open face, "
+        "clean arched brow band, clear ear opening, separate hinged cheek guard plates "
+        "with figural cheek outline, neck guard, and incised edge lines, no crest, no tall "
+        "plume, no folded Phrygian cap"
+    ),
 }
 
 GARMENT_DETAIL_PHRASES: dict[str, str] = {
@@ -91,6 +106,13 @@ MATERIAL_SUFFIX = (
     "marble, no wet shine, no specular hotspots, no frontal studio light, no "
     "head-on beauty lighting, no orange spill on face hair torso or background"
 )
+REFERENCE_HEADWEAR_REPLACEMENT = (
+    "ignore and remove any hat or modern headwear from the reference image, replace it with"
+)
+BLANK_EYE_PHRASE = (
+    "featureless blank marble eye surfaces, pupil-less, iris-less, "
+    "with no circular markings or dark centers"
+)
 
 
 def parse_v6_source_caption(caption: str) -> SourceCaptionParts:
@@ -121,7 +143,11 @@ def parse_v6_source_caption(caption: str) -> SourceCaptionParts:
     return SourceCaptionParts(identity=identity, pose=pose, expression=expression)
 
 
-def render_archetype_details(archetypes: ArchetypePair) -> str:
+def render_archetype_details(
+    archetypes: ArchetypePair,
+    *,
+    clothing_slug: str | None = None,
+) -> str:
     try:
         helmet = HELMET_DETAIL_PHRASES[archetypes.helmet]
     except KeyError as error:
@@ -131,19 +157,29 @@ def render_archetype_details(archetypes: ArchetypePair) -> str:
     except KeyError as error:
         raise KeyError(f"unknown garment archetype: {archetypes.garment}") from error
 
+    if clothing_slug in SLUG_HELMET_DETAIL_PHRASES:
+        helmet = SLUG_HELMET_DETAIL_PHRASES[clothing_slug]
+
     if helmet is None:
         return garment
-    return f"{helmet}, {garment}"
+    return f"{REFERENCE_HEADWEAR_REPLACEMENT} {helmet}, {garment}"
 
 
-def render_v6_caption(source_caption: str, archetypes: ArchetypePair) -> str:
+def render_v6_caption(
+    source_caption: str,
+    archetypes: ArchetypePair,
+    *,
+    clothing_slug: str | None = None,
+) -> str:
     parts = parse_v6_source_caption(source_caption)
-    details = render_archetype_details(archetypes)
+    identity = _render_blank_eye_identity(parts.identity)
+    pose = _render_blank_eye_pose(parts.pose)
+    details = render_archetype_details(archetypes, clothing_slug=clothing_slug)
     return (
         "transform into a <mrblbust> from the reference portrait, "
-        f"preserving {parts.identity}. "
+        f"preserving {identity}. "
         "The target is a Greek marble statue bust with "
-        f"the body {parts.pose}, {parts.expression}, blank sculpted eyes, "
+        f"the body {pose}, {parts.expression}, {BLANK_EYE_PHRASE}, "
         f"{details}, {MATERIAL_SUFFIX}"
     )
 
@@ -211,6 +247,22 @@ def _render_identity(identity_raw: str) -> str:
         demographic, traits = identity_raw.split(" - ", 1)
         return f"{demographic.strip()} with {traits.strip()}"
     return identity_raw.strip()
+
+
+def _render_blank_eye_pose(pose: str) -> str:
+    replacements = {
+        "with a heroic upward gaze": "with a heroic upward head angle",
+        "with a downcast contemplative gaze": "with a downward contemplative head angle",
+        "with a direct gaze toward the viewer": "with the face oriented toward the viewer",
+        "with an off-side gaze away from the viewer": "with the face angled away from the viewer",
+    }
+    for old, new in replacements.items():
+        pose = pose.replace(old, new)
+    return pose.replace(" gaze", " head angle")
+
+
+def _render_blank_eye_identity(identity: str) -> str:
+    return re.sub(r"\beyes\b", "eye openings", identity)
 
 
 def _normalize_spaces(text: str) -> str:
@@ -284,7 +336,11 @@ def _build_copy_plan(
                 raise FileNotFoundError(f"required source file not found: {path}")
 
         source_caption = source_caption_path.read_text(encoding="utf-8")
-        rewritten_caption = render_v6_caption(source_caption=source_caption, archetypes=pair)
+        rewritten_caption = render_v6_caption(
+            source_caption=source_caption,
+            archetypes=pair,
+            clothing_slug=clothing_slug,
+        )
         plan.append(
             {
                 "index": index,

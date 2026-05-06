@@ -77,6 +77,38 @@ def test_render_archetype_details_for_bare_head_omits_helmet_phrase() -> None:
     assert details.startswith("warrior cuirass")
 
 
+def test_render_archetype_details_for_attic_helmet_includes_tall_crest() -> None:
+    details = render_archetype_details(
+        ArchetypePair(helmet="ctAttic", garment="ctAthenaAegisChiton")
+    )
+
+    assert "tall crested Attic Athena helmet" in details
+    assert "raised horsehair crest" in details
+    assert "laurel relief" in details
+
+
+def test_render_archetype_details_uses_corinthian_pushed_up_slug_prompt() -> None:
+    details = render_archetype_details(
+        ArchetypePair(helmet="ctCorinthian", garment="ctAthenaAegisPeplos"),
+        clothing_slug="bronze_athena_corinthian_pushed_up",
+    )
+
+    assert "pushed-up Corinthian Athena helmet" in details
+    assert "broad rear fan-shaped horsehair crest" in details
+    assert "no separate animal statue or freestanding finial" in details
+
+
+def test_render_archetype_details_uses_chalcidian_figural_cheek_slug_prompt() -> None:
+    details = render_archetype_details(
+        ArchetypePair(helmet="ctChalcidian", garment="ctWarriorCuirass"),
+        clothing_slug="bronze_chalcidian_helmet_figural_cheek",
+    )
+
+    assert "smooth close-fitting Chalcidian helmet cap" in details
+    assert "separate hinged cheek guard plates" in details
+    assert "no crest, no tall plume, no folded Phrygian cap" in details
+
+
 def test_render_v6_caption_merges_v5_style_with_source_identity_and_archetypes() -> None:
     caption = render_v6_caption(
         source_caption=SOURCE_CAPTION_001,
@@ -88,13 +120,50 @@ def test_render_v6_caption_merges_v5_style_with_source_identity_and_archetypes()
     assert "short coiled hair gathered into two puffs" in caption
     assert "winged helmet with a tall crest" in caption
     assert "ornate cuirass" in caption
-    assert "blank sculpted eyes" in caption
+    assert "featureless blank marble eye surfaces" in caption
     assert "matte weathered grey-brown stone" in caption
     assert "localized lava only in the lower cracks and fractures" in caption
     assert "no glossy polished marble" in caption
     assert "no orange spill on face hair torso or background" in caption
     assert "CSTALE" not in caption
     assert "ctWinged" not in caption
+
+
+def test_render_v6_caption_for_helmeted_rows_removes_reference_headwear() -> None:
+    caption = render_v6_caption(
+        source_caption=SOURCE_CAPTION_001,
+        archetypes=ArchetypePair(helmet="ctWinged", garment="ctOrnateCuirass"),
+    )
+
+    assert "ignore and remove any hat or modern headwear from the reference image" in caption
+    assert "replace it with" in caption
+
+
+def test_render_v6_caption_replaces_gaze_with_head_angle_and_blank_eye_surface() -> None:
+    caption = render_v6_caption(
+        source_caption=SOURCE_CAPTION_001,
+        archetypes=ArchetypePair(helmet="ctWinged", garment="ctOrnateCuirass"),
+    )
+
+    assert "gaze" not in caption
+    assert "heroic upward head angle" in caption
+    assert "almond eyes" not in caption
+    assert "almond eye openings" in caption
+    assert "featureless blank marble eye surfaces" in caption
+    assert "pupil-less" in caption
+    assert "no circular markings or dark centers" in caption
+
+
+def test_render_v6_caption_applies_clothing_slug_specific_helmet_details() -> None:
+    caption = render_v6_caption(
+        source_caption=SOURCE_CAPTION_001,
+        archetypes=ArchetypePair(helmet="ctChalcidian", garment="ctWarriorCuirass"),
+        clothing_slug="bronze_chalcidian_helmet_figural_cheek",
+    )
+
+    assert "smooth close-fitting Chalcidian helmet cap" in caption
+    assert "separate hinged cheek guard plates" in caption
+    assert "no crest, no tall plume, no folded Phrygian cap" in caption
 
 
 def test_render_v6_caption_raises_clear_error_for_unknown_archetype() -> None:

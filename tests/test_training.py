@@ -259,6 +259,8 @@ def test_render_training_config_sets_marble_v6_199_rank96_defaults(
     assert "data/marble-bust-data/v6_199/control/100.png" in config_text
     assert "data/marble-bust-data/v6_199/control/199.png" in config_text
     assert "winged helmet with a tall crest" in config_text
+    assert "ignore and remove any hat or modern headwear from the reference image" in config_text
+    assert "tall crested Attic Athena helmet" in config_text
     assert "carved Corinthian helmet with cheek guards" in config_text
     assert str(output_dir) in config_text
 
