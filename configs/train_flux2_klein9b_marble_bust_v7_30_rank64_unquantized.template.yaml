@@ -1,0 +1,73 @@
+job: extension
+config:
+  name: marble_bust_v7_30_klein9b_rank64_unquantized_style
+  process:
+    - type: diffusion_trainer
+      training_folder: "{{ training_folder }}"
+      device: "cuda"
+      trigger_word: "<mrblbust>"
+      network:
+        type: "lora"
+        linear: 64
+        linear_alpha: 64
+        conv: 32
+        conv_alpha: 32
+      save:
+        dtype: "bf16"
+        save_every: 200
+        max_step_saves_to_keep: 30
+      datasets:
+        # Captions should stay style-focused and avoid identity-specific names or biographical details.
+        - folder_path: "data/marble-bust-data/v7_30/dataset"
+          control_path_1: "data/marble-bust-data/v7_30/control"
+          caption_ext: "txt"
+          cache_latents_to_disk: true
+          resolution:
+            - 768
+      train:
+        batch_size: 1
+        # Roughly 120 passes over a 30-image set at batch size 1.
+        steps: 3600
+        gradient_accumulation_steps: 1
+        train_unet: true
+        train_text_encoder: false
+        gradient_checkpointing: true
+        lr: 0.00004
+        noise_scheduler: "flowmatch"
+        optimizer: "adamw8bit"
+        skip_first_sample: false
+        timestep_type: "weighted"
+        content_or_style: "style"
+        dtype: "bf16"
+        unload_text_encoder: false
+      model:
+        arch: "flux2_klein_9b"
+        name_or_path: "black-forest-labs/FLUX.2-klein-base-9B"
+        quantize: false
+        quantize_te: false
+        low_vram: false
+        model_kwargs:
+          match_target_res: false
+      sample:
+        sampler: "flowmatch"
+        sample_every: 200
+        width: 768
+        height: 1024
+        samples:
+          - prompt: "Change image 1 into a <mrblbust> Greek marble statue bust from the reference portrait; preserve the broad facial structure, head angle, and silhouette without copying modern clothing, accessories, background, or identity-specific details. The target is a bust-only ancient Greek marble sculpture with visible shoulders and upper torso, carved stone hair as solid chiseled masses, featureless blank marble eye surfaces, pupil-less, iris-less, weathered grey-brown stone, dry chalky unpolished surface, grime in hair grooves and robe folds, chipped shoulders, broken lower bust, dark ember background, no glossy polished marble, no wet shine, no frontal studio light"
+            ctrl_img_1: "data/marble-bust-data/v7_30/control/001.png"
+          - prompt: "Change image 1 into a <mrblbust> classical marble bust from the reference portrait; retain only the face proportions, pose, and hair-volume silhouette while replacing all modern accessories with carved Greek sculptural forms. The result has blank carved eyes, sculpted hair grooves, diagonal himation drapery, matte weathered stone, mineral patina, chipped shoulder edges, broken lower bust, and localized dark grime in recessed carving, no polished surface, no specular highlights, no head-only crop"
+            ctrl_img_1: "data/marble-bust-data/v7_30/control/008.png"
+          - prompt: "Change image 1 into a <mrblbust> aged Greek stone bust from the reference portrait; preserve the reference head orientation and facial planes but keep the LoRA style-only with no identity-specific names or biographical details. The bust has featureless blank marble eye surfaces, broad chiseled stone hair, carved robe folds, chipped shoulders, broken lower bust, dry chalky grey marble, soot and grime in creases, dark ember background, no modern eyewear, no modern accessories, no glossy hair"
+            ctrl_img_1: "data/marble-bust-data/v7_30/control/015.png"
+          - prompt: "Change image 1 into a <mrblbust> warrior-adjacent Greek marble statue bust from the reference portrait; translate the reference silhouette into carved hair, optional low-relief armor trim, and classical drapery while keeping the face as weathered stone. Include blank sculpted eyes, pupil-less and iris-less, matte grey-brown marble, pitted surface, grime in carving channels, chipped shoulders, broken lower bust, dark ember background, no beauty lighting, no orange spill on face or hair"
+            ctrl_img_1: "data/marble-bust-data/v7_30/control/022.png"
+          - prompt: "Change image 1 into a <mrblbust> museum-like ancient Greek marble bust from the reference portrait; preserve only the reference pose, facial structure, and hair mass while removing modern clothing and accessories. The sculpture is bust-only with visible shoulders, carved stone drapery, featureless blank marble eye surfaces, dry matte weathered stone, low-albedo grey-brown patina, chipped shoulders, broken lower bust, grime in recessed folds, dark ember background, no glossy polished marble, no wet shine, no separate rock pedestal"
+            ctrl_img_1: "data/marble-bust-data/v7_30/control/030.png"
+        neg: "head-only crop, close-up face, cropped shoulders, cropped torso, loose rocks, separate rock pile, rock pedestal, debris below bust, flat plinth, individual hair strands, natural hair color, glossy hair, polished marble, wet shine, specular hotspots, frontal studio light, head-on key light, beauty lighting, perfect portrait lighting, head-on beauty lighting, spotlight on face, smooth porcelain face, overexposed white face, clean bright cheeks, shiny forehead, shiny nose, shiny lips, red or orange light on face, red or orange light on hair, glowing skin, glowing hair, soft hair strands, realistic hair texture, modern eyewear, modern accessories, reference hat, black hat, modern hat, fabric hat, wide brim hat, duplicate figures, side-by-side views, collage"
+        seed: 7
+        guidance_scale: 2.5
+        sample_steps: 24
+meta:
+  name: "marble_bust_v7_30_klein9b_rank64_unquantized_style"
+  version: "7.0-30-klein9b-rank64-unquantized"

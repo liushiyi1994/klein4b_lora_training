@@ -265,6 +265,57 @@ def test_render_training_config_sets_marble_v6_199_rank96_defaults(
     assert str(output_dir) in config_text
 
 
+def test_render_training_config_sets_marble_v7_30_klein9b_defaults(
+    tmp_path: Path,
+) -> None:
+    dataset_dir = tmp_path / "ignored_for_paired_v7"
+    dataset_dir.mkdir()
+    output_dir = tmp_path / "outputs"
+    output_dir.mkdir()
+    template_path = (
+        Path(__file__).resolve().parents[1]
+        / "configs"
+        / "train_flux2_klein9b_marble_bust_v7_30_rank64_unquantized.template.yaml"
+    )
+
+    config_text = render_training_config(
+        template_path=template_path,
+        dataset_dir=dataset_dir,
+        output_dir=output_dir,
+    )
+
+    assert 'trigger_word: "<mrblbust>"' in config_text
+    assert "marble_bust_v7_30_klein9b_rank64_unquantized_style" in config_text
+    assert 'folder_path: "data/marble-bust-data/v7_30/dataset"' in config_text
+    assert 'control_path_1: "data/marble-bust-data/v7_30/control"' in config_text
+    assert "steps: 3600" in config_text
+    assert "save_every: 200" in config_text
+    assert "sample_every: 200" in config_text
+    assert "max_step_saves_to_keep: 30" in config_text
+    assert "linear: 64" in config_text
+    assert "linear_alpha: 64" in config_text
+    assert "conv: 32" in config_text
+    assert "conv_alpha: 32" in config_text
+    assert "lr: 0.00004" in config_text
+    assert 'content_or_style: "style"' in config_text
+    assert 'arch: "flux2_klein_9b"' in config_text
+    assert 'name_or_path: "black-forest-labs/FLUX.2-klein-base-9B"' in config_text
+    assert "quantize: false" in config_text
+    assert "quantize_te: false" in config_text
+    assert "low_vram: false" in config_text
+    assert "qfloat8" not in config_text
+    assert "guidance_scale: 2.5" in config_text
+    assert "sample_steps: 24" in config_text
+    assert "data/marble-bust-data/v7_30/control/001.png" in config_text
+    assert "data/marble-bust-data/v7_30/control/015.png" in config_text
+    assert "data/marble-bust-data/v7_30/control/030.png" in config_text
+    assert "featureless blank marble eye surfaces" in config_text
+    assert "identity-specific names or biographical details" in config_text
+    assert "head-only crop" in config_text
+    assert "modern accessories" in config_text
+    assert str(output_dir) in config_text
+
+
 def test_build_training_command_points_to_ai_toolkit_run_py() -> None:
     command = build_training_command(
         Path("vendor/ai-toolkit"),
