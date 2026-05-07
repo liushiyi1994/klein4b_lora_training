@@ -15,6 +15,7 @@ Branch: `feature/data-synthesis`
 - Pair QC manifest: `data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/pair_qc.jsonl`
 - Approved-only job manifest: `data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/approved_jobs.jsonl`
 - Statue reference pool: `data/marble-bust-data/v7_30/statue_reference_pool/wearable_v1/`
+- Reusable output rubric: `docs/training/wearable_output_rubric.md`
 
 ## Pair QC Result
 
