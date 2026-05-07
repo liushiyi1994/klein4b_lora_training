@@ -98,6 +98,51 @@ separate LoRAs:
 
 ## Recommended Training Setup
 
+### fal.ai Offline Package Preparation
+
+For the next round, prepare data for fal.ai first instead of launching local AI
+Toolkit training. The fal edit trainer expects a zip of paired files:
+
+```text
+<root>_start.<ext>  # reference/control selfie
+<root>_end.<ext>    # approved target bust
+<root>.txt          # optional per-pair edit instruction
+```
+
+Create the offline package with:
+
+```bash
+python scripts/prepare_fal_training_package.py \
+  --dataset-root data/marble-bust-data/v7_30 \
+  --output-root outputs/fal_training_packages \
+  --package-name marble_v7_30_klein9b_fal \
+  --steps 3600 \
+  --learning-rate 0.00004
+```
+
+This writes:
+
+```text
+outputs/fal_training_packages/marble_v7_30_klein9b_fal.zip
+outputs/fal_training_packages/marble_v7_30_klein9b_fal_manifest.json
+outputs/fal_training_packages/marble_v7_30_klein9b_fal_request.json
+```
+
+The command is offline only. It does not upload files, call fal.ai, require
+`FAL_KEY`, or spend money. After the zip is uploaded later, place the uploaded
+zip URL into `image_data_url` in the request JSON and submit it to:
+
+```text
+fal-ai/flux-2-klein-9b-base-trainer/edit
+```
+
+Prefer per-pair captions under `dataset/<stem>.txt`. If captions are not ready
+and you intentionally want one fallback edit instruction, pass both
+`--default-caption` and `--allow-missing-captions`; otherwise missing captions
+fail validation.
+
+### Local AI Toolkit Fallback
+
 Use the new Klein 9B template first:
 
 ```bash
@@ -116,6 +161,13 @@ Initial settings:
 - learning rate: `0.00004`
 - text encoder training: off
 - `content_or_style: "style"`
+
+Keep this config as the local fallback and as the source of current training
+intent. For fal.ai, the repo no longer controls AI Toolkit-specific settings
+such as `arch`, `quantize`, `content_or_style`, sample prompts, checkpoint save
+frequency, or optimizer internals. fal controls the trainer runtime; this repo
+controls the paired zip contents, captions, step count, learning rate, and output
+LoRA format.
 
 Keep rank 64 for the first clean 9B run. Move to rank 96 only if a clean set
 still underfits, such as weak marble texture, weak blank eyes, poor bust

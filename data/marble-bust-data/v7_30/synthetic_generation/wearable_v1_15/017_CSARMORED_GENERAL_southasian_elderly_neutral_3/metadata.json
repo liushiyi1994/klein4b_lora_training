@@ -1,0 +1,27 @@
+{
+  "archetype": "CSARMORED_GENERAL",
+  "archetype_slot": 4,
+  "control": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/017_CSARMORED_GENERAL_southasian_elderly_neutral_3/control.png",
+  "id": "017_CSARMORED_GENERAL_southasian_elderly_neutral_3",
+  "job_dir": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/017_CSARMORED_GENERAL_southasian_elderly_neutral_3",
+  "model": "gemini-3-pro-image-preview",
+  "prompt": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/017_CSARMORED_GENERAL_southasian_elderly_neutral_3/prompt.txt",
+  "reference_filename": "06_marble_noble_medusa_cuirass.jpg",
+  "reference_rank": 6,
+  "reference_source_url": "https://github.com/watsondg/charliestale-ml/blob/structured-captions/data-synthesis/assets/clothing-2/marble_noble_lion_pauldron_medusa_cuirass.jpg",
+  "rendered_at": "2026-05-07T19:19:03Z",
+  "statue_reference": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/017_CSARMORED_GENERAL_southasian_elderly_neutral_3/statue_reference.jpg",
+  "style_references": [
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/017_CSARMORED_GENERAL_southasian_elderly_neutral_3/style_1.png",
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/017_CSARMORED_GENERAL_southasian_elderly_neutral_3/style_2.png"
+  ],
+  "subject": {
+    "age": "elderly",
+    "ethnicity": "southasian",
+    "gender": "neutral",
+    "replicate": 3,
+    "source_path": "/tmp/charliestale-ml-structured-captions/data-synthesis/assets/subjects/southasian_elderly_neutral_3.png"
+  },
+  "subject_id": "southasian_elderly_neutral_3",
+  "wearable_cue": "ornate cuirass, lion pauldron, Medusa/gorgoneion"
+}

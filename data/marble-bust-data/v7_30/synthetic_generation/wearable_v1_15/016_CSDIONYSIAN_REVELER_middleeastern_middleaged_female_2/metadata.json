@@ -1,0 +1,27 @@
+{
+  "archetype": "CSDIONYSIAN_REVELER",
+  "archetype_slot": 4,
+  "control": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/016_CSDIONYSIAN_REVELER_middleeastern_middleaged_female_2/control.png",
+  "id": "016_CSDIONYSIAN_REVELER_middleeastern_middleaged_female_2",
+  "job_dir": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/016_CSDIONYSIAN_REVELER_middleeastern_middleaged_female_2",
+  "model": "gemini-3-pro-image-preview",
+  "prompt": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/016_CSDIONYSIAN_REVELER_middleeastern_middleaged_female_2/prompt.txt",
+  "reference_filename": "05_marble_youth_ivy_wreath_grape_clusters.jpg",
+  "reference_rank": 5,
+  "reference_source_url": "https://github.com/watsondg/charliestale-ml/blob/structured-captions/data-synthesis/assets/clothing-2/marble_youth_ivy_wreath_grape_clusters.jpg",
+  "rendered_at": "2026-05-07T19:19:03Z",
+  "statue_reference": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/016_CSDIONYSIAN_REVELER_middleeastern_middleaged_female_2/statue_reference.jpg",
+  "style_references": [
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/016_CSDIONYSIAN_REVELER_middleeastern_middleaged_female_2/style_1.png",
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/016_CSDIONYSIAN_REVELER_middleeastern_middleaged_female_2/style_2.png"
+  ],
+  "subject": {
+    "age": "middleaged",
+    "ethnicity": "middleeastern",
+    "gender": "female",
+    "replicate": 2,
+    "source_path": "/tmp/charliestale-ml-structured-captions/data-synthesis/assets/subjects/middleeastern_middleaged_female_2.png"
+  },
+  "subject_id": "middleeastern_middleaged_female_2",
+  "wearable_cue": "ivy wreath with grape clusters"
+}

@@ -1,0 +1,27 @@
+{
+  "archetype": "CSDRAPED_SCHOLAR",
+  "archetype_slot": 4,
+  "control": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/018_CSDRAPED_SCHOLAR_african_child_male_1/control.png",
+  "id": "018_CSDRAPED_SCHOLAR_african_child_male_1",
+  "job_dir": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/018_CSDRAPED_SCHOLAR_african_child_male_1",
+  "model": "gemini-3-pro-image-preview",
+  "prompt": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/018_CSDRAPED_SCHOLAR_african_child_male_1/prompt.txt",
+  "reference_filename": "05_marble_sage_diagonal_himation_pin.png",
+  "reference_rank": 5,
+  "reference_source_url": "https://github.com/watsondg/charliestale-ml/blob/structured-captions/data-synthesis/assets/clothing-2/marble_sage_diagonal_himation_pin.png",
+  "rendered_at": "2026-05-07T19:19:03Z",
+  "statue_reference": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/018_CSDRAPED_SCHOLAR_african_child_male_1/statue_reference.png",
+  "style_references": [
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/018_CSDRAPED_SCHOLAR_african_child_male_1/style_1.png",
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/018_CSDRAPED_SCHOLAR_african_child_male_1/style_2.png"
+  ],
+  "subject": {
+    "age": "child",
+    "ethnicity": "african",
+    "gender": "male",
+    "replicate": 1,
+    "source_path": "/tmp/charliestale-ml-structured-captions/data-synthesis/assets/subjects/african_child_male_1.png"
+  },
+  "subject_id": "african_child_male_1",
+  "wearable_cue": "diagonal himation with shoulder pin"
+}

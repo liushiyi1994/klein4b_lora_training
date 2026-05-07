@@ -1,0 +1,27 @@
+{
+  "archetype": "CSHELMETED_HERO_WARRIOR",
+  "archetype_slot": 0,
+  "control": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/003_CSHELMETED_HERO_WARRIOR_hispaniclatino_child_male_1/control.png",
+  "id": "003_CSHELMETED_HERO_WARRIOR_hispaniclatino_child_male_1",
+  "job_dir": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/003_CSHELMETED_HERO_WARRIOR_hispaniclatino_child_male_1",
+  "model": "gemini-3-pro-image-preview",
+  "prompt": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/003_CSHELMETED_HERO_WARRIOR_hispaniclatino_child_male_1/prompt.txt",
+  "reference_filename": "01_pericles_corinthian_helmet_bust.jpg",
+  "reference_rank": 1,
+  "reference_source_url": "https://commons.wikimedia.org/wiki/File:Bust_Pericles_Chiaramonti.jpg",
+  "rendered_at": "2026-05-07T19:19:03Z",
+  "statue_reference": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/003_CSHELMETED_HERO_WARRIOR_hispaniclatino_child_male_1/statue_reference.jpg",
+  "style_references": [
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/003_CSHELMETED_HERO_WARRIOR_hispaniclatino_child_male_1/style_1.png",
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/003_CSHELMETED_HERO_WARRIOR_hispaniclatino_child_male_1/style_2.png"
+  ],
+  "subject": {
+    "age": "child",
+    "ethnicity": "hispaniclatino",
+    "gender": "male",
+    "replicate": 1,
+    "source_path": "/tmp/charliestale-ml-structured-captions/data-synthesis/assets/subjects/hispaniclatino_child_male_1.png"
+  },
+  "subject_id": "hispaniclatino_child_male_1",
+  "wearable_cue": "Corinthian helmet worn on bust"
+}

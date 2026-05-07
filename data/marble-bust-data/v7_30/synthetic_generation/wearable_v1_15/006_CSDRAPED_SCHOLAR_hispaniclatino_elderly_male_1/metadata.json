@@ -1,0 +1,27 @@
+{
+  "archetype": "CSDRAPED_SCHOLAR",
+  "archetype_slot": 1,
+  "control": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/006_CSDRAPED_SCHOLAR_hispaniclatino_elderly_male_1/control.png",
+  "id": "006_CSDRAPED_SCHOLAR_hispaniclatino_elderly_male_1",
+  "job_dir": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/006_CSDRAPED_SCHOLAR_hispaniclatino_elderly_male_1",
+  "model": "gemini-3-pro-image-preview",
+  "prompt": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/006_CSDRAPED_SCHOLAR_hispaniclatino_elderly_male_1/prompt.txt",
+  "reference_filename": "02_sophocles_lateran_himation.jpg",
+  "reference_rank": 2,
+  "reference_source_url": "https://commons.wikimedia.org/wiki/File:Sophocles,_Roman_Age_marble_statue_after_Greek_original,_Klas07.jpg",
+  "rendered_at": "2026-05-07T19:19:03Z",
+  "statue_reference": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/006_CSDRAPED_SCHOLAR_hispaniclatino_elderly_male_1/statue_reference.jpg",
+  "style_references": [
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/006_CSDRAPED_SCHOLAR_hispaniclatino_elderly_male_1/style_1.png",
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/006_CSDRAPED_SCHOLAR_hispaniclatino_elderly_male_1/style_2.png"
+  ],
+  "subject": {
+    "age": "elderly",
+    "ethnicity": "hispaniclatino",
+    "gender": "male",
+    "replicate": 1,
+    "source_path": "/tmp/charliestale-ml-structured-captions/data-synthesis/assets/subjects/hispaniclatino_elderly_male_1.png"
+  },
+  "subject_id": "hispaniclatino_elderly_male_1",
+  "wearable_cue": "full wrapped himation across torso and arm"
+}

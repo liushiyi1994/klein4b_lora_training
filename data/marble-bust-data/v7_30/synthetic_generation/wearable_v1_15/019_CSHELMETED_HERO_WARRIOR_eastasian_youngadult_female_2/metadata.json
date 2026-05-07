@@ -1,0 +1,27 @@
+{
+  "archetype": "CSHELMETED_HERO_WARRIOR",
+  "archetype_slot": 4,
+  "control": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/019_CSHELMETED_HERO_WARRIOR_eastasian_youngadult_female_2/control.png",
+  "id": "019_CSHELMETED_HERO_WARRIOR_eastasian_youngadult_female_2",
+  "job_dir": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/019_CSHELMETED_HERO_WARRIOR_eastasian_youngadult_female_2",
+  "model": "gemini-3-pro-image-preview",
+  "prompt": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/019_CSHELMETED_HERO_WARRIOR_eastasian_youngadult_female_2/prompt.txt",
+  "reference_filename": "06_marble_strategos_pilos_helmet_beard.jpg",
+  "reference_rank": 6,
+  "reference_source_url": "https://github.com/watsondg/charliestale-ml/blob/structured-captions/data-synthesis/assets/clothing-2/marble_strategos_pilos_helmet_beard.jpg",
+  "rendered_at": "2026-05-07T19:19:03Z",
+  "statue_reference": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/019_CSHELMETED_HERO_WARRIOR_eastasian_youngadult_female_2/statue_reference.jpg",
+  "style_references": [
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/019_CSHELMETED_HERO_WARRIOR_eastasian_youngadult_female_2/style_1.png",
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/019_CSHELMETED_HERO_WARRIOR_eastasian_youngadult_female_2/style_2.png"
+  ],
+  "subject": {
+    "age": "youngadult",
+    "ethnicity": "eastasian",
+    "gender": "female",
+    "replicate": 2,
+    "source_path": "/tmp/charliestale-ml-structured-captions/data-synthesis/assets/subjects/eastasian_youngadult_female_2.png"
+  },
+  "subject_id": "eastasian_youngadult_female_2",
+  "wearable_cue": "pilos helmet worn on bearded strategos bust"
+}

@@ -1,0 +1,27 @@
+{
+  "archetype": "CSDIONYSIAN_REVELER",
+  "archetype_slot": 2,
+  "control": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/008_CSDIONYSIAN_REVELER_european_youngadult_neutral_3/control.png",
+  "id": "008_CSDIONYSIAN_REVELER_european_youngadult_neutral_3",
+  "job_dir": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/008_CSDIONYSIAN_REVELER_european_youngadult_neutral_3",
+  "model": "gemini-3-pro-image-preview",
+  "prompt": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/008_CSDIONYSIAN_REVELER_european_youngadult_neutral_3/prompt.txt",
+  "reference_filename": "03_marble_dionysos_vine_wreath_himation.png",
+  "reference_rank": 3,
+  "reference_source_url": "https://github.com/watsondg/charliestale-ml/blob/structured-captions/data-synthesis/assets/clothing-2/marble_dionysos_vine_wreath_himation.png",
+  "rendered_at": "2026-05-07T19:19:03Z",
+  "statue_reference": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/008_CSDIONYSIAN_REVELER_european_youngadult_neutral_3/statue_reference.png",
+  "style_references": [
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/008_CSDIONYSIAN_REVELER_european_youngadult_neutral_3/style_1.png",
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/008_CSDIONYSIAN_REVELER_european_youngadult_neutral_3/style_2.png"
+  ],
+  "subject": {
+    "age": "youngadult",
+    "ethnicity": "european",
+    "gender": "neutral",
+    "replicate": 3,
+    "source_path": "/tmp/charliestale-ml-structured-captions/data-synthesis/assets/subjects/european_youngadult_neutral_3.png"
+  },
+  "subject_id": "european_youngadult_neutral_3",
+  "wearable_cue": "vine wreath plus himation/drape"
+}

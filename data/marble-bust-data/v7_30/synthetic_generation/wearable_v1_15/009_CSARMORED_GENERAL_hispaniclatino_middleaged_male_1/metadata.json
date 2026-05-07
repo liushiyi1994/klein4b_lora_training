@@ -1,0 +1,27 @@
+{
+  "archetype": "CSARMORED_GENERAL",
+  "archetype_slot": 2,
+  "control": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/009_CSARMORED_GENERAL_hispaniclatino_middleaged_male_1/control.png",
+  "id": "009_CSARMORED_GENERAL_hispaniclatino_middleaged_male_1",
+  "job_dir": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/009_CSARMORED_GENERAL_hispaniclatino_middleaged_male_1",
+  "model": "gemini-3-pro-image-preview",
+  "prompt": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/009_CSARMORED_GENERAL_hispaniclatino_middleaged_male_1/prompt.txt",
+  "reference_filename": "04_met_hellenistic_cuirassed_torso.jpg",
+  "reference_rank": 4,
+  "reference_source_url": "https://www.metmuseum.org/art/collection/search/257639",
+  "rendered_at": "2026-05-07T19:19:03Z",
+  "statue_reference": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/009_CSARMORED_GENERAL_hispaniclatino_middleaged_male_1/statue_reference.jpg",
+  "style_references": [
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/009_CSARMORED_GENERAL_hispaniclatino_middleaged_male_1/style_1.png",
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/009_CSARMORED_GENERAL_hispaniclatino_middleaged_male_1/style_2.png"
+  ],
+  "subject": {
+    "age": "middleaged",
+    "ethnicity": "hispaniclatino",
+    "gender": "male",
+    "replicate": 1,
+    "source_path": "/tmp/charliestale-ml-structured-captions/data-synthesis/assets/subjects/hispaniclatino_middleaged_male_1.png"
+  },
+  "subject_id": "hispaniclatino_middleaged_male_1",
+  "wearable_cue": "ornate Hellenistic-type cuirass with short cape"
+}

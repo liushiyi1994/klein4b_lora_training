@@ -1,0 +1,27 @@
+{
+  "archetype": "CSDRAPED_SCHOLAR",
+  "archetype_slot": 0,
+  "control": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/002_CSDRAPED_SCHOLAR_european_elderly_neutral_3/control.png",
+  "id": "002_CSDRAPED_SCHOLAR_european_elderly_neutral_3",
+  "job_dir": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/002_CSDRAPED_SCHOLAR_european_elderly_neutral_3",
+  "model": "gemini-3-pro-image-preview",
+  "prompt": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/002_CSDRAPED_SCHOLAR_european_elderly_neutral_3/prompt.txt",
+  "reference_filename": "01_aelius_aristides_vatican_himation.jpg",
+  "reference_rank": 1,
+  "reference_source_url": "https://commons.wikimedia.org/wiki/File:Aelius_Aristides_(Vatican_Museums).jpg",
+  "rendered_at": "2026-05-07T19:19:03Z",
+  "statue_reference": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/002_CSDRAPED_SCHOLAR_european_elderly_neutral_3/statue_reference.jpg",
+  "style_references": [
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/002_CSDRAPED_SCHOLAR_european_elderly_neutral_3/style_1.png",
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/002_CSDRAPED_SCHOLAR_european_elderly_neutral_3/style_2.png"
+  ],
+  "subject": {
+    "age": "elderly",
+    "ethnicity": "european",
+    "gender": "neutral",
+    "replicate": 3,
+    "source_path": "/tmp/charliestale-ml-structured-captions/data-synthesis/assets/subjects/european_elderly_neutral_3.png"
+  },
+  "subject_id": "european_elderly_neutral_3",
+  "wearable_cue": "seated philosopher/orator drape"
+}

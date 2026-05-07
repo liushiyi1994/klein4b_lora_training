@@ -1,8 +1,10 @@
 .venv/
+.python-deps/
 __pycache__/
 .pytest_cache/
 .ruff_cache/
 *.egg-info/
+.env
 data/
 outputs/
 vendor/

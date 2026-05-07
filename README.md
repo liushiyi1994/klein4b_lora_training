@@ -62,6 +62,26 @@ python scripts/train_lora.py \
   --config configs/train_flux2_klein_marble_bust_v4_pairs_rich_result_caption_rank64_unquantized.template.yaml
 ```
 
+## fal.ai Offline Training Package
+
+For the Klein 9B v7 round, use fal.ai package preparation instead of local
+training until the final data is ready:
+
+```bash
+python scripts/prepare_fal_training_package.py \
+  --dataset-root data/marble-bust-data/v7_30 \
+  --output-root outputs/fal_training_packages \
+  --package-name marble_v7_30_klein9b_fal \
+  --steps 3600 \
+  --learning-rate 0.00004
+```
+
+The script writes a fal-compatible zip plus manifest and request JSON. It is
+offline only: no upload, no fal API call, no `FAL_KEY`, and no training charge.
+The zip uses fal's edit-pair naming convention: `<root>_start.<ext>` for the
+reference/control image, `<root>_end.<ext>` for the target, and `<root>.txt` for
+the per-pair edit instruction.
+
 ## Inference
 
 ### Production SageMaker Inference

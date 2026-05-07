@@ -1,0 +1,27 @@
+{
+  "archetype": "CSDIONYSIAN_REVELER",
+  "archetype_slot": 3,
+  "control": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/012_CSDIONYSIAN_REVELER_hispaniclatino_middleaged_male_1/control.png",
+  "id": "012_CSDIONYSIAN_REVELER_hispaniclatino_middleaged_male_1",
+  "job_dir": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/012_CSDIONYSIAN_REVELER_hispaniclatino_middleaged_male_1",
+  "model": "gemini-3-pro-image-preview",
+  "prompt": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/012_CSDIONYSIAN_REVELER_hispaniclatino_middleaged_male_1/prompt.txt",
+  "reference_filename": "04_aic_dionysian_grape_ivy_wreath_marble_head.jpg",
+  "reference_rank": 4,
+  "reference_source_url": "https://www.artic.edu/artworks/48931/portrait-head-of-a-man",
+  "rendered_at": "2026-05-07T19:19:03Z",
+  "statue_reference": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/012_CSDIONYSIAN_REVELER_hispaniclatino_middleaged_male_1/statue_reference.jpg",
+  "style_references": [
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/012_CSDIONYSIAN_REVELER_hispaniclatino_middleaged_male_1/style_1.png",
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/012_CSDIONYSIAN_REVELER_hispaniclatino_middleaged_male_1/style_2.png"
+  ],
+  "subject": {
+    "age": "middleaged",
+    "ethnicity": "hispaniclatino",
+    "gender": "male",
+    "replicate": 1,
+    "source_path": "/tmp/charliestale-ml-structured-captions/data-synthesis/assets/subjects/hispaniclatino_middleaged_male_1.png"
+  },
+  "subject_id": "hispaniclatino_middleaged_male_1",
+  "wearable_cue": "grape-vine and ivy wreath associated with Dionysus"
+}

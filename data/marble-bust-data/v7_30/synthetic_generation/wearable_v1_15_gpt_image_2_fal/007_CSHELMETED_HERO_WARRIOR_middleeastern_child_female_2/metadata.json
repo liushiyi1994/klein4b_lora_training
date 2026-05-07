@@ -1,0 +1,27 @@
+{
+  "archetype": "CSHELMETED_HERO_WARRIOR",
+  "archetype_slot": 1,
+  "control": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/007_CSHELMETED_HERO_WARRIOR_middleeastern_child_female_2/control.png",
+  "id": "007_CSHELMETED_HERO_WARRIOR_middleeastern_child_female_2",
+  "job_dir": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/007_CSHELMETED_HERO_WARRIOR_middleeastern_child_female_2",
+  "model": "gemini-3-pro-image-preview",
+  "prompt": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/007_CSHELMETED_HERO_WARRIOR_middleeastern_child_female_2/prompt.txt",
+  "reference_filename": "02_ares_borghese_helmeted_bust.jpg",
+  "reference_rank": 2,
+  "reference_source_url": "https://3dgo.app/models/thingiverse/196040",
+  "rendered_at": "2026-05-07T19:19:03Z",
+  "statue_reference": "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/007_CSHELMETED_HERO_WARRIOR_middleeastern_child_female_2/statue_reference.jpg",
+  "style_references": [
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/007_CSHELMETED_HERO_WARRIOR_middleeastern_child_female_2/style_1.png",
+    "data/marble-bust-data/v7_30/synthetic_generation/wearable_v1_15/007_CSHELMETED_HERO_WARRIOR_middleeastern_child_female_2/style_2.png"
+  ],
+  "subject": {
+    "age": "child",
+    "ethnicity": "middleeastern",
+    "gender": "female",
+    "replicate": 2,
+    "source_path": "/tmp/charliestale-ml-structured-captions/data-synthesis/assets/subjects/middleeastern_child_female_2.png"
+  },
+  "subject_id": "middleeastern_child_female_2",
+  "wearable_cue": "Ares Borghese-type helmet worn on head"
+}
