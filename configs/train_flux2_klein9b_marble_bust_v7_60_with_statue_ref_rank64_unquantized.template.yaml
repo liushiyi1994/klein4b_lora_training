@@ -1,0 +1,78 @@
+job: extension
+config:
+  name: marble_bust_v7_60_with_statue_ref_klein9b_rank64_unquantized_style
+  process:
+    - type: diffusion_trainer
+      training_folder: "{{ training_folder }}"
+      device: "cuda"
+      trigger_word: "<mrblbust>"
+      network:
+        type: "lora"
+        linear: 64
+        linear_alpha: 64
+        conv: 32
+        conv_alpha: 32
+      save:
+        dtype: "bf16"
+        save_every: 300
+        max_step_saves_to_keep: 30
+      datasets:
+        - folder_path: "{{ dataset_dir }}/wearable_v1_15_with_statue_ref/dataset"
+          control_path_1: "{{ dataset_dir }}/wearable_v1_15_with_statue_ref/control"
+          control_path_2: "{{ dataset_dir }}/wearable_v1_15_with_statue_ref/statue_reference"
+          caption_ext: "txt"
+          cache_latents_to_disk: true
+          resolution:
+            - 768
+      train:
+        batch_size: 1
+        # Roughly 100 passes over a 60-image set at batch size 1.
+        steps: 6000
+        gradient_accumulation_steps: 1
+        train_unet: true
+        train_text_encoder: false
+        gradient_checkpointing: true
+        lr: 0.00004
+        noise_scheduler: "flowmatch"
+        optimizer: "adamw8bit"
+        skip_first_sample: false
+        timestep_type: "weighted"
+        content_or_style: "style"
+        dtype: "bf16"
+        unload_text_encoder: false
+      model:
+        arch: "flux2_klein_9b"
+        name_or_path: "black-forest-labs/FLUX.2-klein-base-9B"
+        quantize: false
+        quantize_te: false
+        low_vram: false
+        model_kwargs:
+          match_target_res: false
+      sample:
+        sampler: "flowmatch"
+        sample_every: 300
+        width: 768
+        height: 1024
+        samples:
+          - prompt: "transform into a <mrblbust> from the reference portrait and reference statue, preserving the reference portrait facial structure and head pose. Use the reference statue for the vegetal wreath and diagonal draped bust silhouette. The target is a three-quarter Greek marble statue bust with blank smooth marble eyes with no pupils or irises, matte weathered grey-beige carved marble, dry chalky unpolished stone, grime in wreath leaves and robe folds, chipped shoulders, broken lower bust, localized lava only in lower cracks, dark ember background"
+            ctrl_img_1: "{{ dataset_dir }}/wearable_v1_15_with_statue_ref/control/000_CSDIONYSIAN_REVELER_african_youngadult_male_1.png"
+            ctrl_img_2: "{{ dataset_dir }}/wearable_v1_15_with_statue_ref/statue_reference/000_CSDIONYSIAN_REVELER_african_youngadult_male_1.jpg"
+          - prompt: "transform into a <mrblbust> from the reference portrait and reference statue, preserving the reference portrait facial structure and child proportions. Use the reference statue for the Corinthian helmet with smooth cap, raised brow band, and cheek guards. The target is a three-quarter child Greek marble statue bust with blank smooth marble eyes with no pupils or irises, matte weathered grey-beige carved marble, dry chalky unpolished stone, grime in helmet channels and garment folds, chipped shoulders, broken lower bust, dark ember background"
+            ctrl_img_1: "{{ dataset_dir }}/wearable_v1_15_with_statue_ref/control/003_CSHELMETED_HERO_WARRIOR_hispaniclatino_child_male_1.png"
+            ctrl_img_2: "{{ dataset_dir }}/wearable_v1_15_with_statue_ref/statue_reference/003_CSHELMETED_HERO_WARRIOR_hispaniclatino_child_male_1.jpg"
+          - prompt: "transform into a <mrblbust> from the reference portrait and reference statue, preserving the reference portrait facial structure and hairstyle silhouette. Use the reference statue for chiton plus full himation drape with layered folds across the body. The target is a three-quarter Greek marble statue bust with blank smooth marble eyes with no pupils or irises, matte weathered grey-beige carved marble, dry chalky unpolished stone, grime in hair channels and robe folds, chipped shoulders, broken lower bust, localized lava only in lower cracks, dark ember background"
+            ctrl_img_1: "{{ dataset_dir }}/wearable_v1_15_with_statue_ref/control/010_CSDRAPED_SCHOLAR_middleeastern_elderly_female_2.png"
+            ctrl_img_2: "{{ dataset_dir }}/wearable_v1_15_with_statue_ref/statue_reference/010_CSDRAPED_SCHOLAR_middleeastern_elderly_female_2.jpg"
+          - prompt: "transform into a <mrblbust> from the reference portrait and reference statue, preserving the reference portrait facial structure and head orientation. Use the reference statue for the Alexander-style cuirass with shoulder armor, central gorgoneion, and framed chest relief. The target is a three-quarter Greek marble statue bust with blank smooth marble eyes with no pupils or irises, matte weathered grey-beige carved marble, dry chalky unpolished stone, grime in hair channels, armor relief, and plate edges, chipped shoulders, broken lower bust, dark ember background"
+            ctrl_img_1: "{{ dataset_dir }}/wearable_v1_15_with_statue_ref/control/001_CSARMORED_GENERAL_eastasian_middleaged_female_2.png"
+            ctrl_img_2: "{{ dataset_dir }}/wearable_v1_15_with_statue_ref/statue_reference/001_CSARMORED_GENERAL_eastasian_middleaged_female_2.jpg"
+          - prompt: "transform into a <mrblbust> from the reference portrait and reference statue, preserving the reference portrait facial structure, short hair silhouette, and head angle. Use the reference statue for the pilos helmet with smooth conical cap and simple raised rim. The target is a three-quarter Greek marble statue bust with blank smooth marble eyes with no pupils or irises, matte weathered grey-beige carved marble, dry chalky unpolished stone, grime in helmet rim and torso folds, chipped shoulders, broken lower bust, dark ember background"
+            ctrl_img_1: "{{ dataset_dir }}/wearable_v1_15_with_statue_ref/control/059_CSHELMETED_HERO_WARRIOR_southasian_middleaged_neutral_3.png"
+            ctrl_img_2: "{{ dataset_dir }}/wearable_v1_15_with_statue_ref/statue_reference/059_CSHELMETED_HERO_WARRIOR_southasian_middleaged_neutral_3.jpg"
+        neg: "head-only crop, close-up face, cropped shoulders, cropped torso, loose rocks, separate rock pile, rock pedestal, debris below bust, flat plinth, individual hair strands, natural hair color, glossy hair, polished marble, wet shine, specular hotspots, frontal studio light, head-on key light, beauty lighting, perfect portrait lighting, head-on beauty lighting, spotlight on face, smooth porcelain face, overexposed white face, clean bright cheeks, shiny forehead, shiny nose, shiny lips, red or orange light on face, red or orange light on hair, glowing skin, glowing hair, soft hair strands, realistic hair texture, modern eyewear, modern accessories, reference hat, black hat, modern hat, fabric hat, wide brim hat, duplicate figures, side-by-side views, collage, melted helmet, warped crest, armor fused with face, armor fused with ears, liquid details, dreamy soft artifacts"
+        seed: 7
+        guidance_scale: 2.5
+        sample_steps: 24
+meta:
+  name: "marble_bust_v7_60_with_statue_ref_klein9b_rank64_unquantized_style"
+  version: "7.0-60-with-statue-ref-klein9b-rank64-unquantized"

@@ -316,6 +316,127 @@ def test_render_training_config_sets_marble_v7_30_klein9b_defaults(
     assert str(output_dir) in config_text
 
 
+def test_render_training_config_sets_marble_v7_60_no_statue_ref_defaults(
+    tmp_path: Path,
+) -> None:
+    dataset_dir = tmp_path / "training"
+    dataset_dir.mkdir()
+    output_dir = tmp_path / "outputs"
+    output_dir.mkdir()
+    template_path = (
+        Path(__file__).resolve().parents[1]
+        / "configs"
+        / "train_flux2_klein9b_marble_bust_v7_60_no_statue_ref_rank64_unquantized.template.yaml"
+    )
+
+    config_text = render_training_config(
+        template_path=template_path,
+        dataset_dir=dataset_dir,
+        output_dir=output_dir,
+    )
+
+    assert 'trigger_word: "<mrblbust>"' in config_text
+    assert "marble_bust_v7_60_no_statue_ref_klein9b_rank64_unquantized_style" in config_text
+    assert (
+        f'folder_path: "{dataset_dir}/wearable_v1_15_no_statue_ref/dataset"'
+        in config_text
+    )
+    assert (
+        f'control_path_1: "{dataset_dir}/wearable_v1_15_no_statue_ref/control"'
+        in config_text
+    )
+    assert "control_path_2" not in config_text
+    assert "steps: 6000" in config_text
+    assert "save_every: 300" in config_text
+    assert "sample_every: 300" in config_text
+    assert "max_step_saves_to_keep: 30" in config_text
+    assert "linear: 64" in config_text
+    assert "linear_alpha: 64" in config_text
+    assert "conv: 32" in config_text
+    assert "conv_alpha: 32" in config_text
+    assert "lr: 0.00004" in config_text
+    assert 'content_or_style: "style"' in config_text
+    assert 'arch: "flux2_klein_9b"' in config_text
+    assert 'name_or_path: "black-forest-labs/FLUX.2-klein-base-9B"' in config_text
+    assert "quantize: false" in config_text
+    assert "quantize_te: false" in config_text
+    assert "low_vram: false" in config_text
+    assert "qfloat8" not in config_text
+    assert "guidance_scale: 2.5" in config_text
+    assert "sample_steps: 24" in config_text
+    assert "ctrl_img_1" in config_text
+    assert "ctrl_img_2" not in config_text
+    assert "reference portrait and reference statue" not in config_text
+    assert "000_CSDIONYSIAN_REVELER_african_youngadult_male_1.png" in config_text
+    assert "003_CSHELMETED_HERO_WARRIOR_hispaniclatino_child_male_1.png" in config_text
+    assert "059_CSHELMETED_HERO_WARRIOR_southasian_middleaged_neutral_3.png" in config_text
+    assert "head-only crop" in config_text
+    assert "modern accessories" in config_text
+    assert str(output_dir) in config_text
+
+
+def test_render_training_config_sets_marble_v7_60_with_statue_ref_defaults(
+    tmp_path: Path,
+) -> None:
+    dataset_dir = tmp_path / "training"
+    dataset_dir.mkdir()
+    output_dir = tmp_path / "outputs"
+    output_dir.mkdir()
+    template_path = (
+        Path(__file__).resolve().parents[1]
+        / "configs"
+        / "train_flux2_klein9b_marble_bust_v7_60_with_statue_ref_rank64_unquantized.template.yaml"
+    )
+
+    config_text = render_training_config(
+        template_path=template_path,
+        dataset_dir=dataset_dir,
+        output_dir=output_dir,
+    )
+
+    assert 'trigger_word: "<mrblbust>"' in config_text
+    assert "marble_bust_v7_60_with_statue_ref_klein9b_rank64_unquantized_style" in config_text
+    assert (
+        f'folder_path: "{dataset_dir}/wearable_v1_15_with_statue_ref/dataset"'
+        in config_text
+    )
+    assert (
+        f'control_path_1: "{dataset_dir}/wearable_v1_15_with_statue_ref/control"'
+        in config_text
+    )
+    assert (
+        f'control_path_2: "{dataset_dir}/wearable_v1_15_with_statue_ref/statue_reference"'
+        in config_text
+    )
+    assert "steps: 6000" in config_text
+    assert "save_every: 300" in config_text
+    assert "sample_every: 300" in config_text
+    assert "max_step_saves_to_keep: 30" in config_text
+    assert "linear: 64" in config_text
+    assert "linear_alpha: 64" in config_text
+    assert "conv: 32" in config_text
+    assert "conv_alpha: 32" in config_text
+    assert "lr: 0.00004" in config_text
+    assert 'content_or_style: "style"' in config_text
+    assert 'arch: "flux2_klein_9b"' in config_text
+    assert 'name_or_path: "black-forest-labs/FLUX.2-klein-base-9B"' in config_text
+    assert "quantize: false" in config_text
+    assert "quantize_te: false" in config_text
+    assert "low_vram: false" in config_text
+    assert "qfloat8" not in config_text
+    assert "guidance_scale: 2.5" in config_text
+    assert "sample_steps: 24" in config_text
+    assert "ctrl_img_1" in config_text
+    assert "ctrl_img_2" in config_text
+    assert "reference portrait and reference statue" in config_text
+    assert "000_CSDIONYSIAN_REVELER_african_youngadult_male_1.jpg" in config_text
+    assert "003_CSHELMETED_HERO_WARRIOR_hispaniclatino_child_male_1.jpg" in config_text
+    assert "059_CSHELMETED_HERO_WARRIOR_southasian_middleaged_neutral_3.jpg" in config_text
+    assert "head-only crop" in config_text
+    assert "modern accessories" in config_text
+    assert str(output_dir) in config_text
+
+
 def test_build_training_command_points_to_ai_toolkit_run_py() -> None:
     command = build_training_command(
         Path("vendor/ai-toolkit"),

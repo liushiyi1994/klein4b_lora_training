@@ -8,18 +8,22 @@ Use this branch for the next training setup:
 git switch feature/klein9b-base-training
 ```
 
-The branch adds a Klein 9B base training template:
+The branch adds Klein 9B base training templates:
 
 ```text
 configs/train_flux2_klein9b_marble_bust_v7_30_rank64_unquantized.template.yaml
+configs/train_flux2_klein9b_marble_bust_v7_60_no_statue_ref_rank64_unquantized.template.yaml
+configs/train_flux2_klein9b_marble_bust_v7_60_with_statue_ref_rank64_unquantized.template.yaml
 ```
 
-The template targets `black-forest-labs/FLUX.2-klein-base-9B` with unquantized
-training, rank 64 LoRA settings, and a paired dataset layout under:
+All templates target `black-forest-labs/FLUX.2-klein-base-9B` with unquantized
+training and rank 64 LoRA settings.
+
+The current 60-image training data is organized under:
 
 ```text
-data/marble-bust-data/v7_30/dataset
-data/marble-bust-data/v7_30/control
+data/marble-bust-data/v7_30/training/wearable_v1_15_no_statue_ref
+data/marble-bust-data/v7_30/training/wearable_v1_15_with_statue_ref
 ```
 
 Keep `data/`, selfies, approved generated targets, and model outputs untracked.
@@ -68,21 +72,20 @@ images contain melted armor, hallucinated helmets, bad crest geometry, glossy
 skin-like marble, or inconsistent lighting, the LoRA can amplify those artifacts
 instead of correcting them.
 
-For the next round, 30 clean approved images are likely more useful than 72
-mixed-quality images. Add more images only if they meet the same quality bar.
+For the next round, the 60 approved images are enough for an A/B training test.
+Add more images only if they meet the same quality bar.
 
 ## Recommended Data Strategy
 
-Start with a narrow v7 set:
+Start with the approved v7 set:
 
 - Use only approved clean targets.
-- Target 30 to 40 images for the first Klein 9B run.
-- Keep one coherent statue look: same material, lighting, background, bust
-  framing, and particle treatment.
-- Limit outfit complexity. Prefer no helmet or one helmet family for the first
-  run.
-- Avoid mixing many helmet types, armor types, clothing silhouettes, and
-  lighting styles in the same small LoRA.
+- Keep material, lighting, background, bust framing, and particle treatment
+  consistent.
+- Keep the four wearable families explicit in captions: Dionysian reveler,
+  armored general, draped scholar, and helmeted hero-warrior.
+- Avoid adding more helmet, armor, clothing, or lighting variants until this
+  60-image set has been evaluated.
 - Reject targets with melted boundaries, distorted crests, armor-face blending,
   glossy highlights, human-looking eyes, modern accessories, or unstable hands,
   shoulders, or bust bases.
@@ -98,12 +101,39 @@ separate LoRAs:
 
 ## Recommended Training Setup
 
-Use the new Klein 9B template first:
+There are two 60-image setups:
+
+1. `no_statue_ref`: target bust, caption, and selfie/reference portrait only.
+   This is closest to the current production inference shape.
+2. `with_statue_ref`: target bust, caption, selfie/reference portrait, and a
+   second reference statue image for wearable detail. This tests whether an
+   explicit statue detail reference reduces helmet and armor hallucination.
+
+Run both with the same model, rank, learning rate, and step count so the
+comparison isolates the data setup.
+
+The current local data root is:
+
+```text
+/home/liush/projects/charlie_tale_ft/data_synthesis/klein4b_lora_training/data/marble-bust-data/v7_30/training
+```
+
+No-statue-reference run:
 
 ```bash
 python scripts/train_lora.py \
-  --config configs/train_flux2_klein9b_marble_bust_v7_30_rank64_unquantized.template.yaml \
-  --output-root outputs/runs/marble_v7_30_klein9b_rank64_unquantized
+  --config configs/train_flux2_klein9b_marble_bust_v7_60_no_statue_ref_rank64_unquantized.template.yaml \
+  --dataset-dir /home/liush/projects/charlie_tale_ft/data_synthesis/klein4b_lora_training/data/marble-bust-data/v7_30/training \
+  --output-root outputs/runs/marble_v7_60_no_statue_ref_klein9b_rank64_unquantized
+```
+
+With-statue-reference run:
+
+```bash
+python scripts/train_lora.py \
+  --config configs/train_flux2_klein9b_marble_bust_v7_60_with_statue_ref_rank64_unquantized.template.yaml \
+  --dataset-dir /home/liush/projects/charlie_tale_ft/data_synthesis/klein4b_lora_training/data/marble-bust-data/v7_30/training \
+  --output-root outputs/runs/marble_v7_60_with_statue_ref_klein9b_rank64_unquantized
 ```
 
 Initial settings:
@@ -112,15 +142,20 @@ Initial settings:
 - arch: `flux2_klein_9b`
 - quantization: off
 - LoRA rank: `linear: 64`, `conv: 32`
-- training length: `3600` steps, roughly 120 passes over 30 images at batch size 1
+- training length: `6000` steps, roughly 100 passes over 60 images at batch size 1
 - learning rate: `0.00004`
 - text encoder training: off
 - `content_or_style: "style"`
 
-Keep rank 64 for the first clean 9B run. Move to rank 96 only if a clean set
+Keep rank 64 for the first clean 9B runs. Move to rank 96 only if the clean set
 still underfits, such as weak marble texture, weak blank eyes, poor bust
 framing, or inconsistent carved-hair style. Do not increase rank to compensate
 for bad targets.
+
+If the `with_statue_ref` run wins, production inference must also provide a
+second statue reference image or a deterministic statue-reference selection
+step. If production will only have the user selfie, prefer the `no_statue_ref`
+run unless the quality gap is large enough to justify changing inference.
 
 ## Evaluation Checklist
 
@@ -141,12 +176,12 @@ of broadening the caption or increasing rank.
 
 ## Next Actions
 
-1. Place the approved v7 targets under `data/marble-bust-data/v7_30/dataset`.
-2. Place matching selfie/reference controls under
-   `data/marble-bust-data/v7_30/control`.
-3. Ensure image stems match between target, control, and caption files.
-4. Audit each target against the rejection criteria above.
-5. Train the unquantized Klein 9B rank64 config.
-6. Run checkpoint samples on fixed references and compare against prior 4B runs.
-7. Decide whether to add more clean data, split looks into separate LoRAs, or
+1. Audit the 60 targets against the rejection criteria above.
+2. Train the no-statue-reference config.
+3. Train the with-statue-reference config.
+4. Run checkpoint samples on the same fixed references for both runs.
+5. Compare identity, blank eyes, wearable structure, helmet stability, armor
+   boundaries, material, lighting, and background consistency.
+6. Decide whether to use the production-like no-statue-ref setup, change
+   inference to include statue references, split looks into separate LoRAs, or
    try rank 96.
